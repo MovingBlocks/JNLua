@@ -1,0 +1,79 @@
+  ---
+  JNLua Introduction
+  ---
+  André Naef
+  ---
+  2010-03-28
+
+JNLua
+
+  JNLua (Java Native Lua) integrates the {{{http://www.lua.org}Lua Scripting
+Language}} into Java. The integration is based on the original implementation
+of Lua which is written in ANSI C. The Lua C code is integrated into Java using
+the Java Native API (JNI).
+
+Features
+
+  JNLua provides the following features:
+
+  * <<Full Lua support with full Java type-safety.>> JNLua provides the full
+functionality of Lua C API including large parts of the Lua Auxiliary Library.
+All Lua Standard Libraries are supported, including the coroutine functions.
+At the same time, JNLua maintains the type-safety of the Java VM by performing
+rigorous checks in its native library.
+
+  * <<Two-way integration.>> With JNLua, you can access Java from Lua and Lua
+from Java. From Lua, JNLua provides full Java object access with intuitive
+syntax and the abilitiy to implement Java interfaces in Lua. From Java, JNLua
+provides full Lua access including the ability to implement Lua function in
+Java. The integration works transparently in both directions and on each end
+conforms to the common principles of the respective platform.
+
+  * <<Extensive language bindings.>> The bindings between Lua and Java are
+abstracted into the domains of Java reflection and conversion. The default
+Java reflector supports field, method and property access on Java classes and
+objects. For overloaded methods, it provides a dispatch logic that mimics the
+behavior described in Java Language Specification. The default converter
+handles the bidirectional conversion of primitive types, such as numbers and
+strings. For complex types, it supports the bidirectional mapping of Lua tables
+to Java maps, lists and arrays. These mappings are generally implemented with
+proxy objects, that is, they work by reference. Both the Java reflector and
+converter can be specialized to fit custom needs.
+
+  * <<Java module.>> The JNLua Java module provides a small but comprehensive set
+of Lua functions providing Java language support for Lua.
+
+  * <<Transparent error handling.>> Java does error handling by exceptions; Lua
+uses mechanics such as error() and pcall(). JNLua ensures a seamless
+translation of error conditions between the two domains. Lua errors are
+reported as exceptions to Java. Java exceptions generate errors on the Lua
+side.
+
+  * <<JSR 223: Scripting for the Java Platform provider.>> JNLua includes a
+provider that conforms to the JSR 223: Scripting for the Java Platform
+specification. This allows the use of Lua as a scripting language for Java in
+a standardized way. The JSR 223 provider also supports the optional
+<<<Compilable>>> and <<<Invocable>>> interfaces.
+
+  * <<JNLua Console.>> A simple console implemented in Java for experimenting
+with JNLua.
+
+Design Goals
+
+  The following goals drive the design of JNLua:
+
+  * <<Stability.>> Both Java and Lua are mature and stable platforms. However,
+the underlying Java VM is a type-safe in a way that ANSI C is not. When loading
+C code into the Java VM, one must be careful not to corrupt the type-safety of
+the VM. JNLua achieves this goal by rigorous argument checking, stack checking
+and a sufficient amount of internal synchronization.
+
+  * <<Performance.>> Lua has a reputation of being a very fast scripting language.
+Basically, JNLua simply tries not to get into the way of that performance ;) In
+support of good performance, JNLua avoids copying values between Java and Lua.
+Instead, JNLua uses proxy objects where possible.
+
+  * <<Simplicity.>> JNLua aims at being simple and easy to learn by adhering to
+well-known patterns in both the Java and the Lua world. Lua provides a large
+spectrum of flexibility with relatively few, but well-designed features.
+JNLua tries to adhere to that spirit.
