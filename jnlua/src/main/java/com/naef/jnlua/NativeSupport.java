@@ -73,7 +73,7 @@ public final class NativeSupport {
 	private class DefaultLoader implements Loader {
 		@Override
 		public void load() {
-			System.loadLibrary("jnlua5.1");
+			System.loadLibrary("jnlua52");
 		}
 	}
 }

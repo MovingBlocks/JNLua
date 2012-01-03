@@ -36,10 +36,12 @@ public class JavaModule {
 	private static final NamedJavaFunction[] EMPTY_MODULE = new NamedJavaFunction[0];
 
 	// -- State
+	final NamedJavaFunction pairs = new Pairs();
+	final NamedJavaFunction ipairs = new IPairs();
 	private final NamedJavaFunction[] functions = { new Require(), new New(),
-			new InstanceOf(), new Cast(), new Proxy(), new Pairs(),
-			new IPairs(), new ToTable(), new Elements(), new Fields(),
-			new Methods(), new Properties() };
+			new InstanceOf(), new Cast(), new Proxy(), pairs, ipairs,
+			new ToTable(), new Elements(), new Fields(), new Methods(),
+			new Properties() };
 
 	// -- Static methods
 	/**
@@ -70,7 +72,7 @@ public class JavaModule {
 	 *            the Lua state to open in
 	 */
 	public void open(LuaState luaState) {
-		luaState.register("java", functions);
+		luaState.register("java", functions, true);
 	}
 
 	/**
@@ -137,12 +139,13 @@ public class JavaModule {
 
 			// Import
 			if (doImport) {
+				// TODO: This won't work anymore
 				className = clazz.getName();
 				int lastDotIndex = className.lastIndexOf('.');
 				if (lastDotIndex >= 0) {
 					String packageName = className.substring(0, lastDotIndex);
 					className = className.substring(lastDotIndex + 1);
-					luaState.register(packageName, EMPTY_MODULE);
+					luaState.register(packageName, EMPTY_MODULE, true);
 					luaState.pushJavaObject(clazz);
 					luaState.setField(-2, className);
 					luaState.pop(1);

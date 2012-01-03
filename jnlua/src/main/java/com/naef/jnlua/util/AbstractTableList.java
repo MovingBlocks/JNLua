@@ -103,7 +103,7 @@ public abstract class AbstractTableList extends AbstractList<Object> implements
 		synchronized (luaState) {
 			pushValue();
 			try {
-				return luaState.length(-1);
+				return luaState.rawLen(-1);
 			} finally {
 				luaState.pop(1);
 			}

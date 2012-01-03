@@ -114,6 +114,16 @@ public interface JavaReflector {
 		 * <code>__tostring</code> metamethod.
 		 */
 		TOSTRING,
+		
+		/**
+		 * <code>__pairs</code> metamethod,
+		 */
+		PAIRS,
+		
+		/**
+		 * <code>__ipairs</code> metamethod,
+		 */
+		IPAIRS,
 
 		/**
 		 * <code>__javafields</code> metamethod.

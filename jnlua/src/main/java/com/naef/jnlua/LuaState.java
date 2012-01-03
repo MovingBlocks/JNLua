@@ -93,7 +93,7 @@ public class LuaState {
 	/**
 	 * Registry pseudo-index.
 	 */
-	public static final int REGISTRYINDEX = -10000;
+	public static final int REGISTRYINDEX;
 
 	/**
 	 * Status indicating that a thread is suspended.
@@ -113,7 +113,7 @@ public class LuaState {
 	/**
 	 * The JNLua version. The format is &lt;major&gt;.&lt;minor&gt;.
 	 */
-	public static final String VERSION = "5.2";
+	public static final String VERSION = "1.0";
 
 	/**
 	 * The Lua version. The format is &lt;major&gt;.&lt;minor&gt;.
@@ -122,6 +122,7 @@ public class LuaState {
 
 	static {
 		NativeSupport.getInstance().getLoader().load();
+		REGISTRYINDEX = lua_registryindex();
 		LUA_VERSION = lua_version();
 	}
 
@@ -379,15 +380,14 @@ public class LuaState {
 	}
 
 	/**
-	 * Performs a garbage collection operation.
+	 * Performs a garbage collection operation. Please see the Lua Reference
+	 * Manual for an explanation of the actions, arguments and return values.
 	 * 
 	 * @param what
 	 *            the operation to perform
 	 * @param data
-	 *            the argument required by some operations (see Lua Reference
-	 *            Manual)
-	 * @return a return value depending on the GC operation performed (see Lua
-	 *         Reference Manual)
+	 *            the argument required by some operations
+	 * @return a return value depending on the GC operation performed
 	 */
 	public synchronized int gc(GcAction what, int data) {
 		check();
@@ -441,15 +441,19 @@ public class LuaState {
 	}
 
 	/**
-	 * Registers a module and pushes the module on the stack.
+	 * Registers a module and pushes the module on the stack. Optionally, a
+	 * module can be registered globally. As of Lua 5.2, modules are <i>not</i>
+	 * expected to set global variables anymore.
 	 * 
 	 * @param moduleName
 	 *            the module name
 	 * @param namedJavaFunctions
 	 *            the Java functions of the module
+	 * @param global
+	 *            whether to register the module globally
 	 */
 	public synchronized void register(String moduleName,
-			NamedJavaFunction[] namedJavaFunctions) {
+			NamedJavaFunction[] namedJavaFunctions, boolean global) {
 		check();
 		/*
 		 * The following code corresponds to luaL_requiref() and must be kept in
@@ -470,10 +474,12 @@ public class LuaState {
 		pushValue(-2);
 		setField(-2, moduleName);
 		pop(1);
-		rawGet(REGISTRYINDEX, RIDX_GLOBALS);
-		pushValue(-2);
-		setField(-2, moduleName);
-		pop(1);
+		if (global) {
+			rawGet(REGISTRYINDEX, RIDX_GLOBALS);
+			pushValue(-2);
+			setField(-2, moduleName);
+			pop(1);
+		}
 	}
 
 	// -- Load and dump
@@ -909,6 +915,21 @@ public class LuaState {
 
 	// -- Stack query
 	/**
+	 * Bypassing metatable logic, returns whether the values at two specified
+	 * stack indexes are equal according to Lua semantics.
+	 * 
+	 * @param index1
+	 *            the first stack index
+	 * @param index2
+	 *            the second stack index
+	 * @return whether the values are equal
+	 */
+	public synchronized boolean rawEqual(int index1, int index2) {
+		check();
+		return lua_rawequal(index1, index2) != 0;
+	}
+
+	/**
 	 * Compares the values at two specified stack indexes for the specified
 	 * operator according to Lua semantics.
 	 * 
@@ -921,7 +942,7 @@ public class LuaState {
 	 * @return the result of the comparison
 	 */
 	public synchronized boolean compare(int index1, int index2,
-			Operator operator) {
+			RelOperator operator) {
 		check();
 		return lua_compare(index1, index2, operator.ordinal()) != 0;
 	}
@@ -935,10 +956,10 @@ public class LuaState {
 	 * @param index2
 	 *            the second stack index
 	 * @return whether the values are equal
-	 * @deprecated Please use compare directly
+	 * @deprecated Please use {@link #compare(int, int, RelOperator)} directly.
 	 */
 	public synchronized boolean equal(int index1, int index2) {
-		return compare(index1, index2, Operator.EQ);
+		return compare(index1, index2, RelOperator.EQ);
 	}
 
 	/**
@@ -951,11 +972,25 @@ public class LuaState {
 	 *            the second stack index
 	 * @return whether the value at the first index is less than the value at
 	 *         the second index
-	 * @deprecated Please use compare directly
+	 * @deprecated Please use {@link #compare(int, int, RelOperator)} directly.
 	 */
 	public synchronized boolean lessThan(int index1, int index2)
 			throws LuaMemoryAllocationException, LuaRuntimeException {
-		return compare(index1, index2, Operator.LT);
+		return compare(index1, index2, RelOperator.LT);
+	}
+
+	/**
+	 * Bypassing metatable logic, returns the length of the value at the
+	 * specified stack index. Please see the Lua Reference Manual for the
+	 * definition of the raw length of a value.
+	 * 
+	 * @param index
+	 *            the stack index
+	 * @return the length
+	 */
+	public synchronized int rawLen(int index) {
+		check();
+		return lua_rawlen(index);
 	}
 
 	/**
@@ -967,25 +1002,10 @@ public class LuaState {
 	 * @param index
 	 *            the stack index
 	 * @return the length
+	 * @deprecated Please use {@link #rawLen(int)} directly.
 	 */
 	public synchronized int length(int index) {
-		check();
-		return lua_rawlen(index);
-	}
-
-	/**
-	 * Bypassing metatable logic, returns whether the values at two specified
-	 * stack indexes are equal according to Lua semantics.
-	 * 
-	 * @param index1
-	 *            the first stack index
-	 * @param index2
-	 *            the second stack index
-	 * @return whether the values are equal
-	 */
-	public synchronized boolean rawEqual(int index1, int index2) {
-		check();
-		return lua_rawequal(index1, index2) != 0;
+		return rawLen(index);
 	}
 
 	/**
@@ -1172,6 +1192,30 @@ public class LuaState {
 
 	// -- Stack operation
 	/**
+	 * Returns the absolute stack index of the specified index.
+	 * 
+	 * @param index
+	 *            the stack index
+	 * @return the absolute stack index
+	 */
+	public synchronized int absIndex(int index) {
+		check();
+		return lua_absindex(index);
+	}
+
+	/**
+	 * Performs an arithmetic operation with values on top of the stack using
+	 * Lua semantics.
+	 * 
+	 * @param operator
+	 *            the operator to apply
+	 */
+	public synchronized void arith(ArithOperator operator) {
+		check();
+		lua_arith(operator.ordinal());
+	}
+
+	/**
 	 * Concatenates the specified number values on top of the stack and replaces
 	 * them with the concatenated value.
 	 * 
@@ -1184,6 +1228,20 @@ public class LuaState {
 	}
 
 	/**
+	 * Copies a value at a specified index to another index, replacing the value
+	 * at that index.
+	 * 
+	 * @param fromIndex
+	 *            the index to copy from
+	 * @param toIndex
+	 *            the index to copy to
+	 */
+	public synchronized void copy(int fromIndex, int toIndex) {
+		check();
+		lua_copy(fromIndex, toIndex);
+	}
+
+	/**
 	 * Returns the number of values on the stack.
 	 * 
 	 * @return the number of values on the tack
@@ -1191,6 +1249,19 @@ public class LuaState {
 	public synchronized int getTop() {
 		check();
 		return lua_gettop();
+	}
+
+	/**
+	 * Pushes the length of the value at the specified stack index on the stack.
+	 * The value pushed by the method corresponds to the Lua <code>#</code>
+	 * operator.
+	 * 
+	 * @param index
+	 *            the index for which to push the length
+	 */
+	public synchronized void len(int index) {
+		check();
+		lua_len(index);
 	}
 
 	/**
@@ -1990,6 +2061,8 @@ public class LuaState {
 	}
 
 	// -- Native methods
+	private static native int lua_registryindex();
+
 	private static native String lua_version();
 
 	private native void lua_newstate(int apiversion);
@@ -2049,11 +2122,11 @@ public class LuaState {
 
 	private native int lua_isthread(int index);
 
-	private native int lua_compare(int index1, int index2, int operator);
-
 	private native int lua_rawlen(int index);
 
 	private native int lua_rawequal(int index1, int index2);
+
+	private native int lua_compare(int index1, int index2, int operator);
 
 	private native int lua_toboolean(int index);
 
@@ -2069,9 +2142,19 @@ public class LuaState {
 
 	private native String lua_tostring(int index);
 
+	private native int lua_type(int index);
+
+	private native int lua_absindex(int index);
+
+	private native int lua_arith(int operator);
+
 	private native void lua_concat(int n);
 
+	private native int lua_copy(int fromIndex, int toIndex);
+
 	private native int lua_gettop();
+
+	private native void lua_len(int index);
 
 	private native void lua_insert(int index);
 
@@ -2084,8 +2167,6 @@ public class LuaState {
 	private native void lua_replace(int index);
 
 	private native void lua_settop(int index);
-
-	private native int lua_type(int index);
 
 	private native void lua_createtable(int narr, int nrec);
 
@@ -2215,8 +2296,8 @@ public class LuaState {
 	}
 
 	/**
-	 * Represents a Lua garbage collector action. See the Lua Reference Manual
-	 * for an explanation of these actions.
+	 * Represents a Lua garbage collector action. Please see the Lua Reference
+	 * Manual for an explanation of these actions.
 	 */
 	public enum GcAction {
 		/**
@@ -2260,7 +2341,7 @@ public class LuaState {
 		SETSTEPMUL,
 
 		/**
-		 * Returns whether the colletor is running (i.e. not stopped).
+		 * Returns whether the collector is running (i.e. not stopped).
 		 */
 		ISRUNNING,
 
@@ -2276,11 +2357,65 @@ public class LuaState {
 	}
 
 	/**
-	 * Represents a Lua operator. See the Lua Reference Manual for an
-	 * explanation of these operators.
+	 * Represents a Lua arithmetic operator. Please see the Lua Reference Manual
+	 * for an explanation of these operators.
 	 */
-	public enum Operator {
-		EQ, LT, LE
+	public enum ArithOperator {
+		/**
+		 * Addition operator.
+		 */
+		ADD,
+
+		/**
+		 * Subtraction operator.
+		 */
+		SUB,
+
+		/**
+		 * Multiplication operator.
+		 */
+		MUL,
+
+		/**
+		 * Division operator.
+		 */
+		DIV,
+
+		/**
+		 * Modulo operator.
+		 */
+		MOD,
+
+		/**
+		 * Exponentiation operator.
+		 */
+		POW,
+
+		/**
+		 * Mathematical negation operator.
+		 */
+		UNM
+	}
+
+	/**
+	 * Represents a Lua relational operator. Please see the Lua Reference Manual
+	 * for an explanation of these operators.
+	 */
+	public enum RelOperator {
+		/**
+		 * Equality operator.
+		 */
+		EQ,
+
+		/**
+		 * Less than operator.
+		 */
+		LT,
+
+		/**
+		 * Less or equal operator.
+		 */
+		LE
 	}
 
 	// -- Nested types

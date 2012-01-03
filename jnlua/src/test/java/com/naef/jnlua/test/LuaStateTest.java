@@ -25,7 +25,7 @@ import org.junit.Test;
 import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
-import com.naef.jnlua.LuaState.Operator;
+import com.naef.jnlua.LuaState.RelOperator;
 import com.naef.jnlua.LuaType;
 import com.naef.jnlua.LuaValueProxy;
 import com.naef.jnlua.NamedJavaFunction;
@@ -86,7 +86,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.pop(1);
 
 		// register(String, NamedJavaFunction[])
-		luaState.register("testlib", new NamedJavaFunction[] { javaFunction });
+		luaState.register("testlib", new NamedJavaFunction[] { javaFunction }, true);
 		assertEquals(LuaType.TABLE, luaState.type(-1));
 		luaState.pop(1);
 		luaState.getGlobal("testlib");
@@ -418,10 +418,10 @@ public class LuaStateTest extends AbstractLuaTest {
 			for (int j = 1; j <= 10; j++) {
 				if (i == j) {
 					assertTrue(String.format("%d, %d", i, j), luaState.compare(i,
-							j, Operator.EQ));
+							j, RelOperator.EQ));
 				} else {
 					assertFalse(String.format("%d, %d", i, j), luaState.compare(
-							i, j, Operator.EQ));
+							i, j, RelOperator.EQ));
 				}
 			}
 		}
@@ -429,7 +429,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		// lessThan()
 		for (int i = 1; i <= 10; i++) {
 			try {
-				assertFalse(String.format("%d", i), luaState.compare(i, i, Operator.LT));
+				assertFalse(String.format("%d", i), luaState.compare(i, i, RelOperator.LT));
 			} catch (LuaRuntimeException e) {
 				makeStack();
 			}
@@ -438,23 +438,23 @@ public class LuaStateTest extends AbstractLuaTest {
 		// lessThanOrEqual()
 		for (int i = 1; i <= 10; i++) {
 			try {
-				assertTrue(String.format("%d", i), luaState.compare(i, i, Operator.LE));
+				assertTrue(String.format("%d", i), luaState.compare(i, i, RelOperator.LE));
 			} catch (LuaRuntimeException e) {
 				makeStack();
 			}
 		}
 
 		// length()
-		assertEquals(0, luaState.length(1));
-		assertEquals(0, luaState.length(2));
+		assertEquals(0, luaState.rawLen(1));
+		assertEquals(0, luaState.rawLen(2));
 		// assertEquals(0, luaState.length(3)); -> would change type
-		assertEquals(4, luaState.length(4));
-		assertEquals(1, luaState.length(5));
-		assertEquals(1, luaState.length(6));
-		assertEquals(0, luaState.length(7));
-		assertTrue(luaState.length(8) == 4 || luaState.length(8) == 8);
-		assertEquals(0, luaState.length(9));
-		assertEquals(0, luaState.length(10));
+		assertEquals(4, luaState.rawLen(4));
+		assertEquals(1, luaState.rawLen(5));
+		assertEquals(1, luaState.rawLen(6));
+		assertEquals(0, luaState.rawLen(7));
+		assertTrue(luaState.rawLen(8) == 4 || luaState.rawLen(8) == 8);
+		assertEquals(0, luaState.rawLen(9));
+		assertEquals(0, luaState.rawLen(10));
 
 		// rawEqual()
 		for (int i = 1; i <= 10; i++) {

@@ -150,7 +150,12 @@ static jclass ioExceptionClass = NULL;
 static int initialized = 0;
 static jmp_buf initJumpBuffer;
 
-/* --- Version --- */
+/* ---- Constants ---- */
+/* lua_registryindex() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1registryindex(JNIEnv *env, jobject obj) {
+	return LUA_REGISTRYINDEX;
+}
+
 /* lua_version() */
 JNIEXPORT jstring JNICALL Java_com_naef_jnlua_LuaState_lua_1version(JNIEnv *env, jobject obj) {
 	const char *luaVersion;
@@ -720,20 +725,6 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1isthread (JNIEnv *env, 
 }
 
 /* ---- Stack query ---- */
-/* lua_compare() */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1compare (JNIEnv *env, jobject obj, jint index1, jint index2, jint operator) {
-	lua_State* luaState;
-	int result;
-	
-	luaState = getLuaThread(env, obj);
-	JNLUA_TRY
-		result = lua_compare(luaState, index1, index2, operator);
-	JNLUA_CATCH
-		result = 0;
-	JNLUA_END
-	return (jint) result;
-}
-
 /* lua_rawlen() */
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1rawlen (JNIEnv *env, jobject obj, jint index) {
 	lua_State* luaState;
@@ -759,6 +750,20 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1rawequal (JNIEnv *env, 
 		checkindex(env, luaState, index1);
 		checkindex(env, luaState, index2);
 		result = lua_rawequal(luaState, index1, index2);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	return (jint) result;
+}
+
+/* lua_compare() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1compare (JNIEnv *env, jobject obj, jint index1, jint index2, jint operator) {
+	lua_State* luaState;
+	int result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = lua_compare(luaState, index1, index2, operator);
 	JNLUA_CATCH
 		result = 0;
 	JNLUA_END
@@ -895,6 +900,31 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1type (JNIEnv *env, jobj
 }
 
 /* ---- Stack operations ---- */
+/* lua_absindex() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1absindex (JNIEnv *env, jobject obj, jint index) {
+	lua_State* luaState;
+	int result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = lua_absindex(luaState, index);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	return (jint) result;
+}
+
+/* lua_arith() */
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1arith (JNIEnv *env, jobject obj, jint operator) {
+	lua_State* luaState;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		checknelems(env, luaState, operator != LUA_OPUNM ? 2 : 1);
+		lua_arith(luaState, operator);
+	JNLUA_END
+}
+
 /* lua_concat() */
 JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1concat (JNIEnv *env, jobject obj, jint n) {
 	lua_State* luaState;
@@ -910,6 +940,18 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1concat (JNIEnv *env, jo
 	JNLUA_END
 }
 
+/* lua_copy() */
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1copy (JNIEnv *env, jobject obj, jint fromIndex, jint toIndex) {
+	lua_State* luaState;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		checkindex(env, luaState, fromIndex);
+		checkindex(env, luaState, toIndex);
+		lua_copy(luaState, fromIndex, toIndex);
+	JNLUA_END
+}
+
 /* lua_gettop() */
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1gettop (JNIEnv *env, jobject obj) {
 	lua_State* luaState;
@@ -922,6 +964,18 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1gettop (JNIEnv *env, jo
 		result = 0;
 	JNLUA_END
 	return (jint) result;
+}
+
+/* lua_len() */
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1len (JNIEnv *env, jobject obj, jint index) {
+	lua_State* luaState;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		checkindex(env, luaState, index);
+		checkstack(env, luaState, 1);
+		lua_len(luaState, index);
+	JNLUA_END
 }
 
 /* lua_insert() */

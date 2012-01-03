@@ -19,7 +19,7 @@ import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
-import com.naef.jnlua.LuaState.Operator;
+import com.naef.jnlua.LuaState.RelOperator;
 
 /**
  * Throws illegal arguments at the Lua state for error testing.
@@ -109,7 +109,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullNameRegister() {
-		luaState.register(null, new NamedJavaFunction[0]);
+		luaState.register(null, new NamedJavaFunction[0], true);
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullFunctionsRegister() {
-		luaState.register("", null);
+		luaState.register("", null, true);
 	}
 
 	/**
@@ -311,7 +311,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = IllegalArgumentException.class)
 	public void testIllegalCompare() {
-		luaState.compare(getIllegalIndex(), getIllegalIndex(), Operator.EQ);
+		luaState.compare(getIllegalIndex(), getIllegalIndex(), RelOperator.EQ);
 	}
 
 	/**
@@ -335,11 +335,19 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	}
 
 	/**
-	 * length(int) with illegal index.
+	 * rawLen(int) with illegal index.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testIllegalLength() {
-		luaState.length(getIllegalIndex());
+	public void testIllegalRawLen() {
+		luaState.rawLen(getIllegalIndex());
+	}
+
+	/**
+	 * len(int) with illegal index.
+	 */
+	@Test(expected = IllegalArgumentException.class)
+	public void testIllegalLen() {
+		luaState.len(getIllegalIndex());
 	}
 
 	/**

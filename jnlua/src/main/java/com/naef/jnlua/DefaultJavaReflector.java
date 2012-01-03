@@ -90,6 +90,10 @@ public class DefaultJavaReflector implements JavaReflector {
 			return lessThanOrEqual;
 		case TOSTRING:
 			return toString;
+		case PAIRS:
+			return JavaModule.getInstance().pairs;
+		case IPAIRS:
+			return JavaModule.getInstance().ipairs;
 		case JAVAFIELDS:
 			return javaFields;
 		case JAVAMETHODS:
