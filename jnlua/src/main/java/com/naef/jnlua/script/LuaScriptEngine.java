@@ -127,7 +127,7 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 	@Override
 	public <T> T getInterface(Class<T> clasz) {
 		synchronized (luaState) {
-			luaState.pushValue(LuaState.GLOBALSINDEX);
+			getLuaState().rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
 			try {
 				return luaState.getProxy(-1, clasz);
 			} finally {
@@ -238,7 +238,7 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 	void loadChunk(InputStream inputStream, ScriptContext scriptContext)
 			throws ScriptException {
 		try {
-			luaState.load(inputStream, getChunkName(scriptContext));
+			luaState.load(inputStream, getChunkName(scriptContext), "t");
 		} catch (LuaException e) {
 			throw getScriptException(e);
 		} catch (IOException e) {
@@ -341,10 +341,10 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 		if (context != null) {
 			Object fileName = context.getAttribute(FILENAME);
 			if (fileName != null) {
-				return fileName.toString();
+				return "@" + fileName.toString();
 			}
 		}
-		return "null";
+		return "=null";
 	}
 
 	/**

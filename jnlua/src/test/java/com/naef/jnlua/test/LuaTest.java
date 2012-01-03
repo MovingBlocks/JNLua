@@ -41,7 +41,7 @@ public class LuaTest extends AbstractLuaTest {
 		// Load
 		InputStream inputStream = getClass().getClassLoader()
 				.getResourceAsStream(source);
-		luaState.load(inputStream, moduleName);
+		luaState.load(inputStream, "=" + moduleName, "t");
 		luaState.pushString(moduleName);
 		luaState.call(1, 0);
 

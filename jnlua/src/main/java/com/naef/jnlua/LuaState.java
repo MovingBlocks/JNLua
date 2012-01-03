@@ -5,16 +5,6 @@
 
 package com.naef.jnlua;
 
-// Lua 5.2
-// bitlib
-// setfenv/getfenv -> deprecated
-// lua_equal, lua_lessthan -> deprecated, lua_compare new
-// remove GLOBALSINDEX
-// __pairs, __ipairs support as metamethods, see Java Reflector and Java Module
-// gc: new opcode
-// LUA_ERRGCMM
-// lua_yieldk, lua_pcallk
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,36 +65,35 @@ import com.naef.jnlua.JavaReflector.Metamethod;
  * </tr>
  * <tr>
  * <td>{@link com.naef.jnlua.LuaSyntaxException}</td>
- * <td>if a the syntax of a Lua chunk is incorrect</td>
+ * <td>if the syntax of a Lua chunk is incorrect</td>
  * </tr>
  * <tr>
  * <td>{@link com.naef.jnlua.LuaMemoryAllocationException}</td>
  * <td>if the Lua memory allocator runs out of memory or if a JNI allocation
  * fails</td>
  * </tr>
+ * <tr>
+ * <td>{@link com.naef.jnlua.LuaGcMetamethodException}</td>
+ * <td>if an error occurs running a <code>__gc</code> metamethod during garbage
+ * collection</td>
+ * </tr>
+ * <tr>
+ * <td>{@link com.naef.jnlua.LuaMessageHandlerException}</td>
+ * <td>if an error occurs running the message handler of a protected call</td>
+ * </tr>
  * </table>
  */
 public class LuaState {
 	// -- Static
 	/**
-	 * Registry pseudo-index.
-	 */
-	public static final int REGISTRYINDEX = -10000;
-
-	/**
-	 * Environment pseudo-index.
-	 */
-	public static final int ENVIRONINDEX = -10001;
-
-	/**
-	 * Globals pseudo-index.
-	 */
-	public static final int GLOBALSINDEX = -10002;
-
-	/**
 	 * Multiple returns pseudo return value count.
 	 */
 	public static final int MULTRET = -1;
+
+	/**
+	 * Registry pseudo-index.
+	 */
+	public static final int REGISTRYINDEX = -10000;
 
 	/**
 	 * Status indicating that a thread is suspended.
@@ -112,9 +101,19 @@ public class LuaState {
 	public static final int YIELD = 1;
 
 	/**
+	 * Registry index of the main thread.
+	 */
+	public static final int RIDX_MAINTHREAD = 1;
+
+	/**
+	 * Registry index of the global environment.
+	 */
+	public static final int RIDX_GLOBALS = 2;
+
+	/**
 	 * The JNLua version. The format is &lt;major&gt;.&lt;minor&gt;.
 	 */
-	public static final String VERSION = "0.9";
+	public static final String VERSION = "5.2";
 
 	/**
 	 * The Lua version. The format is &lt;major&gt;.&lt;minor&gt;.
@@ -129,7 +128,7 @@ public class LuaState {
 	/**
 	 * The API version.
 	 */
-	private static final int APIVERSION = 1;
+	private static final int APIVERSION = 2;
 
 	// -- State
 	/**
@@ -144,13 +143,11 @@ public class LuaState {
 	 * coroutine. This field is modified exclusively on the JNI side and must
 	 * not be touched on the Java side.
 	 */
-	@SuppressWarnings("unused")
 	private long luaThread;
 
 	/**
 	 * Ensures proper finalization of this Lua state.
 	 */
-	@SuppressWarnings("unused")
 	private Object finalizeGuardian;
 
 	/**
@@ -214,13 +211,13 @@ public class LuaState {
 			lua_pushjavafunction(new JavaFunction() {
 				@Override
 				public int invoke(LuaState luaState) {
-					JavaFunction javaFunction = getMetamethod(luaState
-							.toJavaObjectRaw(1), metamethod);
+					JavaFunction javaFunction = getMetamethod(
+							luaState.toJavaObjectRaw(1), metamethod);
 					if (javaFunction != null) {
 						return javaFunction.invoke(LuaState.this);
 					} else {
-						throw new UnsupportedOperationException(metamethod
-								.getMetamethodName());
+						throw new UnsupportedOperationException(
+								metamethod.getMetamethodName());
 					}
 				}
 			});
@@ -399,7 +396,8 @@ public class LuaState {
 
 	// -- Registration
 	/**
-	 * Opens the specified library in this Lua state.
+	 * Opens the specified library in this Lua state. The library is pushed onto
+	 * the stack.
 	 * 
 	 * @param library
 	 *            the library
@@ -422,6 +420,7 @@ public class LuaState {
 		check();
 		for (Library library : Library.values()) {
 			library.open(this);
+			pop(1);
 		}
 	}
 
@@ -442,8 +441,7 @@ public class LuaState {
 	}
 
 	/**
-	 * Registers a module and pushes the module on the stack. The module name is
-	 * allowed to contain dots to define module hierarchies.
+	 * Registers a module and pushes the module on the stack.
 	 * 
 	 * @param moduleName
 	 *            the module name
@@ -454,25 +452,11 @@ public class LuaState {
 			NamedJavaFunction[] namedJavaFunctions) {
 		check();
 		/*
-		 * The following code corresponds to luaL_openlib() and must be kept in
+		 * The following code corresponds to luaL_requiref() and must be kept in
 		 * sync. The original code cannot be called due to the necessity of
 		 * pushing each C function with an individual closure.
 		 */
-		lua_findtable(REGISTRYINDEX, "_LOADED", 1);
-		getField(-1, moduleName);
-		if (!isTable(-1)) {
-			pop(1);
-			String conflict = lua_findtable(GLOBALSINDEX, moduleName,
-					namedJavaFunctions.length);
-			if (conflict != null) {
-				throw new IllegalArgumentException(String.format(
-						"naming conflict for module name '%s' at '%s'",
-						moduleName, conflict));
-			}
-			pushValue(-1);
-			setField(-3, moduleName);
-		}
-		remove(-2);
+		newTable(0, namedJavaFunctions.length);
 		for (int i = 0; i < namedJavaFunctions.length; i++) {
 			String name = namedJavaFunctions[i].getName();
 			if (name == null) {
@@ -482,28 +466,39 @@ public class LuaState {
 			pushJavaFunction(namedJavaFunctions[i]);
 			setField(-2, name);
 		}
+		lua_getsubtable(REGISTRYINDEX, "_LOADED");
+		pushValue(-2);
+		setField(-2, moduleName);
+		pop(1);
+		rawGet(REGISTRYINDEX, RIDX_GLOBALS);
+		pushValue(-2);
+		setField(-2, moduleName);
+		pop(1);
 	}
 
 	// -- Load and dump
 	/**
 	 * Loads a Lua chunk from an input stream and pushes it on the stack as a
-	 * function. The Lua chunk must be either a UTF-8 encoded source chunk or a
-	 * pre-compiled binary chunk.
+	 * function. Depending on the value of mode, the the Lua chunk can either be
+	 * a pre-compiled binary chunk or a UTF-8 encoded text chunk.
 	 * 
 	 * @param inputStream
 	 *            the input stream
 	 * @param chunkName
 	 *            the name of the chunk for use in error messages
+	 * @param mode
+	 *            <code>"b"</code> to accept binary, <code>"t"</code> to accept
+	 *            text, or <code>"bt"</code> to accept both
 	 * @throws IOException
 	 *             if an IO error occurs
 	 */
-	public synchronized void load(InputStream inputStream, String chunkName)
-			throws IOException {
+	public synchronized void load(InputStream inputStream, String chunkName,
+			String mode) throws IOException {
 		if (chunkName == null) {
 			throw new NullPointerException();
 		}
 		check();
-		lua_load(inputStream, "=" + chunkName);
+		lua_load(inputStream, chunkName, mode);
 	}
 
 	/**
@@ -517,7 +512,8 @@ public class LuaState {
 	 */
 	public synchronized void load(String chunk, String chunkName) {
 		try {
-			load(new ByteArrayInputStream(chunk.getBytes("UTF-8")), chunkName);
+			load(new ByteArrayInputStream(chunk.getBytes("UTF-8")), chunkName,
+					"t");
 		} catch (IOException e) {
 			throw new LuaMemoryAllocationException(e.getMessage());
 		}
@@ -757,8 +753,7 @@ public class LuaState {
 	 * <p>
 	 * Note that the method does not perform conversion. If you want to check if
 	 * a value <i>is convertible to</i> a Java object, then invoke <code>
-	 * isJavaObject(index, Object.class)</code>
-	 * .
+	 * isJavaObject(index, Object.class)</code> .
 	 * </p>
 	 * 
 	 * <p>
@@ -914,6 +909,24 @@ public class LuaState {
 
 	// -- Stack query
 	/**
+	 * Compares the values at two specified stack indexes for the specified
+	 * operator according to Lua semantics.
+	 * 
+	 * @param index1
+	 *            the first stack index
+	 * @param index2
+	 *            the second stack index
+	 * @param operator
+	 *            the operator
+	 * @return the result of the comparison
+	 */
+	public synchronized boolean compare(int index1, int index2,
+			Operator operator) {
+		check();
+		return lua_compare(index1, index2, operator.ordinal()) != 0;
+	}
+
+	/**
 	 * Returns whether the values at two specified stack indexes are equal
 	 * according to Lua semantics.
 	 * 
@@ -922,10 +935,10 @@ public class LuaState {
 	 * @param index2
 	 *            the second stack index
 	 * @return whether the values are equal
+	 * @deprecated Please use compare directly
 	 */
 	public synchronized boolean equal(int index1, int index2) {
-		check();
-		return lua_equal(index1, index2) != 0;
+		return compare(index1, index2, Operator.EQ);
 	}
 
 	/**
@@ -938,11 +951,11 @@ public class LuaState {
 	 *            the second stack index
 	 * @return whether the value at the first index is less than the value at
 	 *         the second index
+	 * @deprecated Please use compare directly
 	 */
 	public synchronized boolean lessThan(int index1, int index2)
 			throws LuaMemoryAllocationException, LuaRuntimeException {
-		check();
-		return lua_lessthan(index1, index2) != 0;
+		return compare(index1, index2, Operator.LT);
 	}
 
 	/**
@@ -957,7 +970,7 @@ public class LuaState {
 	 */
 	public synchronized int length(int index) {
 		check();
-		return lua_objlen(index);
+		return lua_rawlen(index);
 	}
 
 	/**
@@ -1448,36 +1461,6 @@ public class LuaState {
 		return lua_setmetatable(index) != 0;
 	}
 
-	// -- Environment table
-	/**
-	 * Pushes on the stack the environment table of the value at the specified
-	 * index. If the value does not have an environment table, <code>nil</code>
-	 * is pushed on the stack.
-	 * 
-	 * @param index
-	 *            the stack index containing the value to get the environment
-	 *            table from
-	 */
-	public synchronized void getFEnv(int index) {
-		check();
-		lua_getfenv(index);
-	}
-
-	/**
-	 * Sets the value on top of the stack as the environment table of the value
-	 * at the specified index. The environment table to be set is popped from
-	 * the stack regardless whether it can be set or not.
-	 * 
-	 * @param index
-	 *            the stack index containing the value to set the environment
-	 *            table for
-	 * @return whether the environment table was set
-	 */
-	public synchronized boolean setFEnv(int index) {
-		check();
-		return lua_setfenv(index) != 0;
-	}
-
 	// -- Thread
 	/**
 	 * Pops the start function of a new Lua thread from the stack and creates
@@ -1635,44 +1618,6 @@ public class LuaState {
 	}
 
 	/**
-	 * Checks if the value of the specified function argument is a boolean. If
-	 * so, the argument value is returned as a boolean. Otherwise, the method
-	 * throws a Lua runtime exception with a descriptive error message.
-	 * 
-	 * @param index
-	 *            the argument index
-	 * @return the boolean value, or the default value
-	 */
-	public synchronized boolean checkBoolean(int index) {
-		check();
-		if (!isBoolean(index)) {
-			throw getArgTypeException(index, LuaType.BOOLEAN);
-		}
-		return toBoolean(index);
-	}
-
-	/**
-	 * Checks if the value of the specified function argument is a boolean. If
-	 * so, the argument value is returned as a boolean. If the value of the
-	 * specified argument is undefined or <code>nil</code>, the method returns
-	 * the specified default value. Otherwise, the method throws a Lua runtime
-	 * exception with a descriptive error message.
-	 * 
-	 * @param index
-	 *            the argument index
-	 * @param d
-	 *            the default value
-	 * @return the boolean value
-	 */
-	public synchronized boolean checkBoolean(int index, boolean d) {
-		check();
-		if (isNoneOrNil(index)) {
-			return d;
-		}
-		return checkBoolean(index);
-	}
-
-	/**
 	 * Checks if the value of the specified function argument is a number or a
 	 * string convertible to a number. If so, the argument value is returned as
 	 * an integer. Otherwise, the method throws a Lua runtime exception with a
@@ -1773,8 +1718,10 @@ public class LuaState {
 	public synchronized <T> T checkJavaObject(int index, Class<T> clazz) {
 		check();
 		if (!isJavaObject(index, clazz)) {
-			throw getArgException(index, String.format("exptected %s, got %s",
-					clazz.getCanonicalName(), typeName(index)));
+			throw getArgException(
+					index,
+					String.format("exptected %s, got %s",
+							clazz.getCanonicalName(), typeName(index)));
 		}
 		return toJavaObject(index, clazz);
 	}
@@ -1823,8 +1770,10 @@ public class LuaState {
 				return s;
 			}
 		}
-		throw getArgException(index, String.format(
-				"expected one of %s, got %s", Arrays.asList(options), s));
+		throw getArgException(
+				index,
+				String.format("expected one of %s, got %s",
+						Arrays.asList(options), s));
 	}
 
 	/**
@@ -2013,9 +1962,9 @@ public class LuaState {
 	 * Creates a Lua runtime exception to indicate an argument type error.
 	 */
 	private LuaRuntimeException getArgTypeException(int index, LuaType type) {
-		return getArgException(index, String
-				.format("expected %s, got %s", type.toString().toLowerCase(),
-						type(index).toString().toLowerCase()));
+		return getArgException(index,
+				String.format("expected %s, got %s", type.toString()
+						.toLowerCase(), type(index).toString().toLowerCase()));
 	}
 
 	/**
@@ -2051,8 +2000,8 @@ public class LuaState {
 
 	private native void lua_openlib(int lib);
 
-	private native void lua_load(InputStream inputStream, String chunkname)
-			throws IOException;
+	private native void lua_load(InputStream inputStream, String chunkname,
+			String mode) throws IOException;
 
 	private native void lua_dump(OutputStream outputStream) throws IOException;
 
@@ -2100,11 +2049,9 @@ public class LuaState {
 
 	private native int lua_isthread(int index);
 
-	private native int lua_equal(int index1, int index2);
+	private native int lua_compare(int index1, int index2, int operator);
 
-	private native int lua_lessthan(int index1, int index2);
-
-	private native int lua_objlen(int index);
+	private native int lua_rawlen(int index);
 
 	private native int lua_rawequal(int index1, int index2);
 
@@ -2142,7 +2089,7 @@ public class LuaState {
 
 	private native void lua_createtable(int narr, int nrec);
 
-	private native String lua_findtable(int idx, String fname, int szhint);
+	private native String lua_getsubtable(int idx, String fname);
 
 	private native void lua_gettable(int index);
 
@@ -2170,10 +2117,6 @@ public class LuaState {
 
 	private native int lua_getmetafield(int index, String k);
 
-	private native void lua_getfenv(int index);
-
-	private native int lua_setfenv(int index);
-
 	private native void lua_newthread();
 
 	private native int lua_resume(int index, int nargs);
@@ -2199,10 +2142,23 @@ public class LuaState {
 	 * Represents a Lua library.
 	 */
 	public enum Library {
+		/*
+		 * The order of the libraries follows the definition in linit.c.
+		 */
 		/**
-		 * The base library, including the coroutine functions.
+		 * The base library.
 		 */
 		BASE,
+
+		/**
+		 * The package library.
+		 */
+		PACKAGE,
+
+		/**
+		 * The coroutine library.
+		 */
+		COROUTINE,
 
 		/**
 		 * The table library.
@@ -2225,6 +2181,11 @@ public class LuaState {
 		STRING,
 
 		/**
+		 * The bit library.
+		 */
+		BIT32,
+
+		/**
 		 * The math library.
 		 */
 		MATH,
@@ -2233,11 +2194,6 @@ public class LuaState {
 		 * The debug library.
 		 */
 		DEBUG,
-
-		/**
-		 * The package library.
-		 */
-		PACKAGE,
 
 		/**
 		 * The Java library.
@@ -2301,7 +2257,30 @@ public class LuaState {
 		/**
 		 * Set step multiplier.
 		 */
-		SETSTEPMUL
+		SETSTEPMUL,
+
+		/**
+		 * Returns whether the colletor is running (i.e. not stopped).
+		 */
+		ISRUNNING,
+
+		/**
+		 * Changes the collector to the generational mode.
+		 */
+		GEN,
+
+		/**
+		 * Changes the collector to the incremental mode.
+		 */
+		INC
+	}
+
+	/**
+	 * Represents a Lua operator. See the Lua Reference Manual for an
+	 * explanation of these operators.
+	 */
+	public enum Operator {
+		EQ, LT, LE
 	}
 
 	// -- Nested types

@@ -234,6 +234,7 @@ public abstract class AbstractTableMap<K> extends AbstractMap<K, Object>
 			if (!(object instanceof AbstractTableMap<?>.Entry)) {
 				return false;
 			}
+			@SuppressWarnings("unchecked")
 			Entry luaTableEntry = (Entry) object;
 			if (luaTableEntry.getLuaState() != getLuaState()) {
 				return false;
@@ -246,6 +247,7 @@ public abstract class AbstractTableMap<K> extends AbstractMap<K, Object>
 			if (!(object instanceof AbstractTableMap<?>.Entry)) {
 				return false;
 			}
+			@SuppressWarnings("unchecked")
 			Entry luaTableEntry = (Entry) object;
 			if (luaTableEntry.getLuaState() != getLuaState()) {
 				return false;
@@ -361,6 +363,7 @@ public abstract class AbstractTableMap<K> extends AbstractMap<K, Object>
 			if (!(obj instanceof AbstractTableMap<?>.Entry)) {
 				return false;
 			}
+			@SuppressWarnings("unchecked")
 			Entry other = (Entry) obj;
 			return getLuaState() == other.getLuaState()
 					&& key.equals(other.key);

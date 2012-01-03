@@ -25,6 +25,7 @@ import org.junit.Test;
 import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
+import com.naef.jnlua.LuaState.Operator;
 import com.naef.jnlua.LuaType;
 import com.naef.jnlua.LuaValueProxy;
 import com.naef.jnlua.NamedJavaFunction;
@@ -104,7 +105,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		InputStream inputStream = new ByteArrayInputStream("a = {}"
 				.getBytes("UTF-8"));
 		// load(InputStream)
-		luaState.load(inputStream, "test1");
+		luaState.load(inputStream, "=test1", "t");
 		luaState.call(0, 0);
 		luaState.getGlobal("a");
 		assertEquals(LuaType.TABLE, luaState.type(-1));
@@ -416,11 +417,11 @@ public class LuaStateTest extends AbstractLuaTest {
 		for (int i = 1; i <= 10; i++) {
 			for (int j = 1; j <= 10; j++) {
 				if (i == j) {
-					assertTrue(String.format("%d, %d", i, j), luaState.equal(i,
-							j));
+					assertTrue(String.format("%d, %d", i, j), luaState.compare(i,
+							j, Operator.EQ));
 				} else {
-					assertFalse(String.format("%d, %d", i, j), luaState.equal(
-							i, j));
+					assertFalse(String.format("%d, %d", i, j), luaState.compare(
+							i, j, Operator.EQ));
 				}
 			}
 		}
@@ -428,7 +429,16 @@ public class LuaStateTest extends AbstractLuaTest {
 		// lessThan()
 		for (int i = 1; i <= 10; i++) {
 			try {
-				assertFalse(String.format("%d", i), luaState.lessThan(i, i));
+				assertFalse(String.format("%d", i), luaState.compare(i, i, Operator.LT));
+			} catch (LuaRuntimeException e) {
+				makeStack();
+			}
+		}
+
+		// lessThanOrEqual()
+		for (int i = 1; i <= 10; i++) {
+			try {
+				assertTrue(String.format("%d", i), luaState.compare(i, i, Operator.LE));
 			} catch (LuaRuntimeException e) {
 				makeStack();
 			}
@@ -698,30 +708,6 @@ public class LuaStateTest extends AbstractLuaTest {
 	}
 
 	/**
-	 * Tests the environment table methods.
-	 */
-	@Test
-	public void testEnvironmentTable() throws Exception {
-		// getMetaTable()
-		luaState.load("function a() end", "test");
-		luaState.call(0, 0);
-
-		// getFEnv()
-		luaState.getGlobal("a");
-		luaState.getFEnv(1);
-		assertEquals(LuaType.TABLE, luaState.type(-1));
-		luaState.pop(1);
-
-		// setFEnv()
-		luaState.newTable();
-		assertTrue(luaState.setFEnv(1));
-
-		// Finish
-		luaState.pop(1);
-		assertEquals(0, luaState.getTop());
-	}
-
-	/**
 	 * Tests the thread methods.
 	 */
 	@Test
@@ -806,8 +792,6 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Simple checks
 		luaState.openLibs();
 		makeStack();
-		assertFalse(luaState.checkBoolean(2));
-		assertTrue(luaState.checkBoolean(1, true));
 		assertEquals(1, luaState.checkInteger(3));
 		assertEquals(1, luaState.checkInteger(1, 1));
 		assertEquals(1.0, luaState.checkNumber(3), 0.0);

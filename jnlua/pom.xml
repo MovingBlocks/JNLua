@@ -3,30 +3,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.naef</groupId>
 	<artifactId>jnlua</artifactId>
-	<version>0.9.1</version>
+	<version>5.2.0</version>
 	<packaging>jar</packaging>
 	<name>JNLua</name>
 	<description>Java Native Lua</description>
-	<url>http://www.naef.com/jnlua</url>
-	<mailingLists>
-		<mailingList>
-			<name>JNLua</name>
-			<subscribe>http://mailman.naef.com/cgi-bin/mailman/listinfo/jnlua</subscribe>
-			<unsubscribe>http://mailman.naef.com/cgi-bin/mailman/listinfo/jnlua</unsubscribe>
-			<archive>http://mailman.naef.com/pipermail/jnlua/</archive>
-		</mailingList>
-	</mailingLists>
-	<issueManagement>
-		<system>JIRA</system>
-		<url>http://jira.naef.com/browse/JNLUA</url>
-	</issueManagement>
-	<ciManagement>
-		<system>Bamboo</system>
-		<url>http://bamboo.naef.com/browse/JNLUA-DEF</url>
-	</ciManagement>
 	<scm>
-		<connection>scm:svn:http://svn.naef.com/jnlua/jnlua</connection>
-		<url>http://svn.naef.com/jnlua/jnlua</url>
+		<connection>scm:svn:http://jnlua.googlecode.com/svn/trunk</connection>
+		<url>http://jnlua.googlecode.com/svn/trunk</url>
 	</scm>
 	<licenses>
 		<license>
@@ -37,7 +20,7 @@
 	</licenses>
 	<organization>
 		<name>André Naef</name>
-		<url>http://www.naef.com</url>
+		<url>http://www.naef.com/</url>
 	</organization>
 	<dependencies>
 		<dependency>
@@ -81,42 +64,6 @@
 				</configuration>
 			</plugin>
 		</plugins>
-		<extensions>
-			<extension>
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh</artifactId>
-			</extension>
-		</extensions>
 	</build>
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-project-info-reports-plugin</artifactId>
-				<version>2.1.2</version>
-				<reportSets>
-					<reportSet>
-						<reports>
-							<report>cim</report>
-							<report>issue-tracking</report>
-							<report>license</report>
-							<report>mailing-list</report>
-							<report>scm</report>
-							<report>summary</report>
-						</reports>
-					</reportSet>
-				</reportSets>
-			</plugin>
-		</plugins>
-	</reporting>
-	<distributionManagement>
-		<site>
-			<id>naef-scp</id>
-			<url>scp://luskan.naef.com/var/www/naef/jnlua</url>
-		</site>
-	</distributionManagement>
+	<url>http://code.google.com/p/jnlua/</url>
 </project>

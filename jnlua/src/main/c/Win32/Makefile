@@ -1,7 +1,7 @@
 # Paths
-JDK_DIR=C:\Program Files\Java\jdk1.6.0_18
-LUA_DIR=C:\Users\Public\Apps\Lua\Lua-5.1\lib
-VERSION=5.1
+JDK_DIR=C:\Program Files\Java\jdk1.6.0_19
+LUA_DIR=C:\Users\Public\Apps\Lua\5.2\lib64
+VERSION=52
 
 # Tools
 CC=cl

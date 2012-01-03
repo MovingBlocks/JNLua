@@ -163,7 +163,7 @@ public class LuaConsole {
 		try {
 			long start = System.nanoTime();
 			luaState.setTop(0);
-			luaState.load(in, "console");
+			luaState.load(in, "=console", "t");
 			luaState.call(0, LuaState.MULTRET);
 			long stop = System.nanoTime();
 			for (int i = 1; i <= luaState.getTop(); i++) {

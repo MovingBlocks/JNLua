@@ -19,6 +19,7 @@ import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
+import com.naef.jnlua.LuaState.Operator;
 
 /**
  * Throws illegal arguments at the Lua state for error testing.
@@ -124,7 +125,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullStreamLoad() throws Exception {
-		luaState.load((InputStream) null, "");
+		luaState.load((InputStream) null, "=nullStreamLoad", "bt");
 	}
 
 	/**
@@ -132,7 +133,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullChunkLoad1() throws Exception {
-		luaState.load(new ByteArrayInputStream(new byte[0]), null);
+		luaState.load(new ByteArrayInputStream(new byte[0]), null, "bt");
 	}
 
 	/**
@@ -161,7 +162,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 			public int read() throws IOException {
 				throw new IOException();
 			}
-		}, "ioExceptionLoad");
+		}, "=ioExceptionLoad", "bt");
 	}
 
 	/**
@@ -304,11 +305,20 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 			luaState.pushNumber(0.0);
 		}
 	}
+	
+	/**
+	 * compare(int, int, Operator) with illegal indexes.
+	 */
+	@Test(expected = IllegalArgumentException.class)
+	public void testIllegalCompare() {
+		luaState.compare(getIllegalIndex(), getIllegalIndex(), Operator.EQ);
+	}
 
 	/**
 	 * equal(int, int) with illegal indexes.
 	 */
 	@Test(expected = IllegalArgumentException.class)
+	@SuppressWarnings("deprecation")
 	public void testIllegalEqual() {
 		luaState.equal(getIllegalIndex(), getIllegalIndex());
 	}
@@ -317,6 +327,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 * lessThan(int, int) with illegal types.
 	 */
 	@Test(expected = LuaRuntimeException.class)
+	@SuppressWarnings("deprecation")
 	public void testIllegalLessThan() {
 		luaState.pushNil();
 		luaState.pushNumber(0.0);
@@ -593,17 +604,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 		luaState.newTable();
 		luaState.pushNumber(0.0);
 		luaState.setMetatable(1);
-	}
-
-	/**
-	 * setFEnv(int) with invalid table.
-	 */
-	@Test(expected = IllegalArgumentException.class)
-	public void testIllegalSetFEnv() {
-		luaState.openLibs();
-		luaState.getGlobal("print");
-		luaState.pushNumber(0.0);
-		luaState.setFEnv(1);
 	}
 
 	/**
