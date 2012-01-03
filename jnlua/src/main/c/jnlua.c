@@ -3,6 +3,7 @@
  * See LICENSE.txt for license terms.
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <setjmp.h>
 #include <jni.h>
@@ -153,7 +154,7 @@ static jmp_buf initJumpBuffer;
 /* ---- Constants ---- */
 /* lua_registryindex() */
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1registryindex(JNIEnv *env, jobject obj) {
-	return LUA_REGISTRYINDEX;
+	return (jint) LUA_REGISTRYINDEX;
 }
 
 /* lua_version() */
@@ -261,7 +262,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1gc (JNIEnv *env, jobjec
 
 /* ---- Registration ---- */
 /* lua_openlib() */
-JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1openlib (JNIEnv *env, jobject obj, int lib) {
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1openlib (JNIEnv *env, jobject obj, jint lib) {
 	lua_State* luaState;
 	lua_CFunction openFunc;
 	const char *libName;
@@ -321,13 +322,12 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1openlib (JNIEnv *env, j
 /* lua_load() */
 JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1load (JNIEnv *env, jobject obj, jobject inputStream, jstring chunkname, jstring mode) {
 	lua_State *luaState;
-	const char *chunknameUtf;
-	const char *modeUtf;
+	const char *chunknameUtf, *modeUtf;
 	Stream stream;
 	int status;
 
 	chunknameUtf = NULL;
-	mode = NULL;
+	modeUtf = NULL;
 	stream.byteArray = NULL;
 	stream.bytes = NULL;
 	luaState = getLuaThread(env, obj);
@@ -725,15 +725,14 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1isthread (JNIEnv *env, 
 }
 
 /* ---- Stack query ---- */
-/* lua_rawlen() */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1rawlen (JNIEnv *env, jobject obj, jint index) {
+/* lua_compare() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1compare (JNIEnv *env, jobject obj, jint index1, jint index2, jint operator) {
 	lua_State* luaState;
-	size_t result;
+	int result;
 	
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
-		checkindex(env, luaState, index);
-		result = lua_rawlen(luaState, index);
+		result = lua_compare(luaState, index1, index2, operator);
 	JNLUA_CATCH
 		result = 0;
 	JNLUA_END
@@ -756,14 +755,15 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1rawequal (JNIEnv *env, 
 	return (jint) result;
 }
 
-/* lua_compare() */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1compare (JNIEnv *env, jobject obj, jint index1, jint index2, jint operator) {
+/* lua_rawlen() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1rawlen (JNIEnv *env, jobject obj, jint index) {
 	lua_State* luaState;
-	int result;
+	size_t result;
 	
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
-		result = lua_compare(luaState, index1, index2, operator);
+		checkindex(env, luaState, index);
+		result = lua_rawlen(luaState, index);
 	JNLUA_CATCH
 		result = 0;
 	JNLUA_END
@@ -777,7 +777,6 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1toboolean (JNIEnv *env,
 	
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
-		checkindex(env, luaState, index);
 		result = lua_toboolean(luaState, index);
 	JNLUA_CATCH
 		result = 0;
@@ -1048,7 +1047,7 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1settop (JNIEnv *env, jo
 
 /* ---- Table ---- */
 /* lua_createtable() */
-JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1createtable (JNIEnv *env, jobject obj, int narr, int nrec) {
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1createtable (JNIEnv *env, jobject obj, jint narr, jint nrec) {
 	lua_State* luaState;
 	
 	luaState = getLuaThread(env, obj);
@@ -1078,7 +1077,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1getsubtable (JNIEnv *en
 	if (fnameUtf) {
 		(*env)->ReleaseStringUTFChars(env, fname, fnameUtf);
 	}
-	return result;
+	return (jint) result;
 }
 
 /* lua_getfield() */
@@ -1290,7 +1289,7 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1newthread (JNIEnv *env,
 }
 
 /* lua_resume() */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1resume (JNIEnv *env, jobject obj, int index, int nargs) {
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1resume (JNIEnv *env, jobject obj, jint index, jint nargs) {
 	lua_State *luaState;
 	lua_State *luaThread;
 	int status;
@@ -1323,7 +1322,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1resume (JNIEnv *env, jo
 }
 
 /* lua_status() */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1status (JNIEnv *env, jobject obj, int index) {
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1status (JNIEnv *env, jobject obj, jint index) {
 	lua_State *luaState;
 	lua_State *luaThread;
 	int result;
@@ -1337,25 +1336,6 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1status (JNIEnv *env, jo
 		result = 0;
 	JNLUA_END
 	return (jint) result;	
-}
-
-/* lua_yield() */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1yield (JNIEnv *env, jobject obj, int nresults) {
-	lua_State *luaState;
-	int result;
-	
-	luaState = getLuaThread(env, obj);
-	JNLUA_TRY
-		checkarg(env, luaState, nresults >= 0 || nresults == LUA_MULTRET, "illegal return count");
-		if (nresults != LUA_MULTRET) {
-			checknelems(env, luaState, nresults);
-		}
-		checkstate(env, luaState, luaState != getLuaState(env, obj), "not in a thread");
-		result = lua_yield(luaState, nresults);
-	JNLUA_CATCH
-		result = 0;
-	JNLUA_END
-	return (jint) result;
 }
 
 /* ---- Reference ---- */
@@ -1375,7 +1355,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1ref (JNIEnv *env, jobje
 }
 
 /* lua_unref() */
-JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1unref (JNIEnv *env, jobject obj, jint index, int ref) {
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1unref (JNIEnv *env, jobject obj, jint index, jint ref) {
 	lua_State* luaState;
 	
 	luaState = getLuaThread(env, obj);
@@ -1386,7 +1366,8 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1unref (JNIEnv *env, job
 }
 
 /* ---- Optimization ---- */
-JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1tablesize (JNIEnv *env, jobject obj, int index) {
+/* lua_tablesize() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1tablesize (JNIEnv *env, jobject obj, jint index) {
 	lua_State* luaState;
 	int count;
 	
@@ -1408,7 +1389,8 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1tablesize (JNIEnv *env,
 	return (jint) count;
 }
 
-JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1tablemove (JNIEnv *env, jobject obj, int index, int from, int to, int count) {
+/* lua_tablemove() */
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1tablemove (JNIEnv *env, jobject obj, jint index, jint from, jint to, jint count) {
 	lua_State* luaState;
 	int i;
 	
@@ -1431,6 +1413,164 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1tablemove (JNIEnv *env,
 		}
 		lua_pop(luaState, 1); 
 	JNLUA_END
+}
+
+/* ---- Argument checking ---- */
+/* lua_argcheck() */
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1argcheck (JNIEnv *env, jobject obj, jboolean cond, jint narg, jstring extraMsg) {
+	lua_State *luaState;
+	const char *extraMsgUtf;
+	
+	extraMsgUtf = NULL;
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		extraMsgUtf = getStringUtfChars(env, luaState, extraMsg);
+		luaL_argcheck(luaState, cond, narg, extraMsgUtf);
+	JNLUA_END
+	if (extraMsgUtf) {
+		(*env)->ReleaseStringUTFChars(env, extraMsg, extraMsgUtf);
+	}
+}
+
+/* lua_checkinteger() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkinteger (JNIEnv *env, jobject obj, jint narg) {
+	lua_State *luaState;
+	lua_Integer result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = luaL_checkinteger(luaState, narg);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	return (jint) result;
+}
+
+/* lua_checknumber() */
+JNIEXPORT jdouble JNICALL Java_com_naef_jnlua_LuaState_lua_1checknumber (JNIEnv *env, jobject obj, jint narg) {
+	lua_State *luaState;
+	lua_Number result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = luaL_checknumber(luaState, narg);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	return (jdouble) result;
+}
+
+/* lua_checkoption() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkoption (JNIEnv *env, jobject obj, jint narg, jstring def, jobjectArray lst) {
+	lua_State *luaState;
+	const char *defUtf;
+	jsize lstLength, i;
+	const char **lstUtf;
+	int result;
+	
+	defUtf = NULL;
+	lstLength = 0;
+	lstUtf = NULL;
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		if (def != NULL) {
+			defUtf = getStringUtfChars(env, luaState, def);
+		}
+		checknotnull(env, luaState, lst);
+		lstLength = (*env)->GetArrayLength(env, lst);
+		lstUtf = (const char **) calloc(lstLength + 1, sizeof(const char *));
+		check(env, luaState, lstUtf != NULL, luaMemoryAllocationExceptionClass, "JNI error: calloc() failed");
+		for (i = 0; i < lstLength; i++) {
+			lstUtf[i] = getStringUtfChars(env, luaState, (*env)->GetObjectArrayElement(env, lst, i));
+		}
+		result = luaL_checkoption(luaState, narg, defUtf, lstUtf);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	if (lstUtf) {
+		for (i = 0; i < lstLength; i++) {
+			if (lstUtf[i]) {
+				(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, lst, i), lstUtf[i]);
+			}
+		}
+		free((void *) lstUtf);
+	}
+	if (defUtf) {
+		(*env)->ReleaseStringUTFChars(env, def, defUtf);
+	}
+	return (jint) result;
+}
+
+/* lua_checkstring() */
+JNIEXPORT jstring JNICALL Java_com_naef_jnlua_LuaState_lua_1checkstring (JNIEnv *env, jobject obj, jint narg) {
+	lua_State *luaState;
+	const char *result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = luaL_checkstring(luaState, narg);
+	JNLUA_CATCH
+		result = NULL;
+	JNLUA_END
+	return (*env)->NewStringUTF(env, result); 
+}
+
+/* lua_checktype() */
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1checktype (JNIEnv *env, jobject obj, jint narg, jint type) {
+	lua_State *luaState;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		luaL_checktype(luaState, narg, type);
+	JNLUA_END
+}
+
+/* lua_optinteger() */
+JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1optinteger (JNIEnv *env, jobject obj, jint narg, jint d) {
+	lua_State *luaState;
+	lua_Integer result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = luaL_optinteger(luaState, narg, d);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	return (jint) result;
+}
+
+/* lua_optnumber() */
+JNIEXPORT jdouble JNICALL Java_com_naef_jnlua_LuaState_lua_1optnumber (JNIEnv *env, jobject obj, jint narg, jdouble d) {
+	lua_State *luaState;
+	lua_Number result;
+	
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		result = luaL_optnumber(luaState, narg, d);
+	JNLUA_CATCH
+		result = 0;
+	JNLUA_END
+	return (jdouble) result;
+}
+
+/* lua_optstring() */
+JNIEXPORT jstring JNICALL Java_com_naef_jnlua_LuaState_lua_1optstring (JNIEnv *env, jobject obj, jint narg, jstring d) {
+	lua_State *luaState;
+	const char *dUtf;
+	const char *result;
+	
+	dUtf = NULL;
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		dUtf = getStringUtfChars(env, luaState, d);
+		result = luaL_optstring(luaState, narg, dUtf);
+	JNLUA_CATCH
+		result = NULL;
+	JNLUA_END
+	if (dUtf) {
+		(*env)->ReleaseStringUTFChars(env, d, dUtf);
+	}
+	return (*env)->NewStringUTF(env, result); 
 }
 
 /* ---- Function arguments ---- */

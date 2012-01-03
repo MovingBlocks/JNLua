@@ -229,16 +229,16 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 	 */
 	void loadChunk(Reader reader, ScriptContext scriptContext)
 			throws ScriptException {
-		loadChunk(new ReaderInputStream(reader), scriptContext);
+		loadChunk(new ReaderInputStream(reader), scriptContext, "t");
 	}
 
 	/**
 	 * Loads a chunk from an input stream.
 	 */
-	void loadChunk(InputStream inputStream, ScriptContext scriptContext)
-			throws ScriptException {
+	void loadChunk(InputStream inputStream, ScriptContext scriptContext,
+			String mode) throws ScriptException {
 		try {
-			luaState.load(inputStream, getChunkName(scriptContext), "t");
+			luaState.load(inputStream, getChunkName(scriptContext), mode);
 		} catch (LuaException e) {
 			throw getScriptException(e);
 		} catch (IOException e) {

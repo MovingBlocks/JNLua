@@ -19,7 +19,6 @@ import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.NamedJavaFunction;
-import com.naef.jnlua.LuaState.RelOperator;
 
 /**
  * Throws illegal arguments at the Lua state for error testing.
@@ -307,23 +306,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	}
 	
 	/**
-	 * compare(int, int, Operator) with illegal indexes.
-	 */
-	@Test(expected = IllegalArgumentException.class)
-	public void testIllegalCompare() {
-		luaState.compare(getIllegalIndex(), getIllegalIndex(), RelOperator.EQ);
-	}
-
-	/**
-	 * equal(int, int) with illegal indexes.
-	 */
-	@Test(expected = IllegalArgumentException.class)
-	@SuppressWarnings("deprecation")
-	public void testIllegalEqual() {
-		luaState.equal(getIllegalIndex(), getIllegalIndex());
-	}
-
-	/**
 	 * lessThan(int, int) with illegal types.
 	 */
 	@Test(expected = LuaRuntimeException.class)
@@ -356,14 +338,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	@Test(expected = IllegalArgumentException.class)
 	public void testIllegalRawEqual() {
 		luaState.rawEqual(getIllegalIndex(), getIllegalIndex());
-	}
-
-	/**
-	 * toBoolean(int) with illegal index.
-	 */
-	@Test(expected = IllegalArgumentException.class)
-	public void testIllegalToBoolean() {
-		luaState.toBoolean(getIllegalIndex());
 	}
 
 	/**
@@ -643,15 +617,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 		luaState.getGlobal("print");
 		luaState.newThread();
 		luaState.resume(1, 1);
-	}
-
-	/**
-	 * yield(int) with no running thread.
-	 */
-	@Test(expected = IllegalStateException.class)
-	public void testIllegalYield() {
-		luaState.pushNumber(0.0);
-		luaState.yield(0);
 	}
 
 	/**

@@ -57,14 +57,16 @@ public class LuaStateTest extends AbstractLuaTest {
 	@Test
 	public void testRegistration() throws Exception {
 		// openLib()
-		testOpenLib(LuaState.Library.BASE, "coroutine");
+		testOpenLib(LuaState.Library.BASE, "_G");
+		testOpenLib(LuaState.Library.PACKAGE, "package");
+		testOpenLib(LuaState.Library.COROUTINE, "coroutine");
 		testOpenLib(LuaState.Library.TABLE, "table");
 		testOpenLib(LuaState.Library.IO, "io");
 		testOpenLib(LuaState.Library.OS, "os");
 		testOpenLib(LuaState.Library.STRING, "string");
+		testOpenLib(LuaState.Library.BIT32, "bit32");
 		testOpenLib(LuaState.Library.MATH, "math");
 		testOpenLib(LuaState.Library.DEBUG, "debug");
-		testOpenLib(LuaState.Library.PACKAGE, "package");
 		testOpenLib(LuaState.Library.JAVA, "java");
 
 		// openLibs()
@@ -86,7 +88,8 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.pop(1);
 
 		// register(String, NamedJavaFunction[])
-		luaState.register("testlib", new NamedJavaFunction[] { javaFunction }, true);
+		luaState.register("testlib", new NamedJavaFunction[] { javaFunction },
+				true);
 		assertEquals(LuaType.TABLE, luaState.type(-1));
 		luaState.pop(1);
 		luaState.getGlobal("testlib");
@@ -102,8 +105,8 @@ public class LuaStateTest extends AbstractLuaTest {
 	 */
 	@Test
 	public void testLoadAndDump() throws Exception {
-		InputStream inputStream = new ByteArrayInputStream("a = {}"
-				.getBytes("UTF-8"));
+		InputStream inputStream = new ByteArrayInputStream(
+				"a = {}".getBytes("UTF-8"));
 		// load(InputStream)
 		luaState.load(inputStream, "=test1", "t");
 		luaState.call(0, 0);
@@ -206,8 +209,8 @@ public class LuaStateTest extends AbstractLuaTest {
 
 		luaState.pushJavaObject(Double.valueOf(1.0));
 		assertEquals(LuaType.NUMBER, luaState.type(1));
-		assertEquals(Double.valueOf(1.0), luaState
-				.toJavaObject(1, Double.class));
+		assertEquals(Double.valueOf(1.0),
+				luaState.toJavaObject(1, Double.class));
 		luaState.pop(1);
 
 		luaState.pushJavaObject("test");
@@ -417,30 +420,28 @@ public class LuaStateTest extends AbstractLuaTest {
 		for (int i = 1; i <= 10; i++) {
 			for (int j = 1; j <= 10; j++) {
 				if (i == j) {
-					assertTrue(String.format("%d, %d", i, j), luaState.compare(i,
-							j, RelOperator.EQ));
+					assertTrue(String.format("%d, %d", i, j),
+							luaState.compare(i, j, RelOperator.EQ));
 				} else {
-					assertFalse(String.format("%d, %d", i, j), luaState.compare(
-							i, j, RelOperator.EQ));
+					assertFalse(String.format("%d, %d", i, j),
+							luaState.compare(i, j, RelOperator.EQ));
 				}
 			}
 		}
 
 		// lessThan()
 		for (int i = 1; i <= 10; i++) {
-			try {
-				assertFalse(String.format("%d", i), luaState.compare(i, i, RelOperator.LT));
-			} catch (LuaRuntimeException e) {
-				makeStack();
+			if (luaState.isNumber(i)) {
+				assertFalse(String.format("%d", i),
+						luaState.compare(i, i, RelOperator.LT));
 			}
 		}
 
 		// lessThanOrEqual()
 		for (int i = 1; i <= 10; i++) {
-			try {
-				assertTrue(String.format("%d", i), luaState.compare(i, i, RelOperator.LE));
-			} catch (LuaRuntimeException e) {
-				makeStack();
+			if (luaState.isNumber(i)) {
+				assertTrue(String.format("%d", i),
+						luaState.compare(i, i, RelOperator.LE));
 			}
 		}
 
@@ -460,11 +461,11 @@ public class LuaStateTest extends AbstractLuaTest {
 		for (int i = 1; i <= 10; i++) {
 			for (int j = 1; j <= 10; j++) {
 				if (i == j) {
-					assertTrue(String.format("%d, %d", i, j), luaState
-							.rawEqual(i, j));
+					assertTrue(String.format("%d, %d", i, j),
+							luaState.rawEqual(i, j));
 				} else {
-					assertFalse(String.format("%d, %d", i, j), luaState
-							.rawEqual(i, j));
+					assertFalse(String.format("%d, %d", i, j),
+							luaState.rawEqual(i, j));
 				}
 			}
 		}
@@ -520,12 +521,12 @@ public class LuaStateTest extends AbstractLuaTest {
 		// toJavaObject(int, Class)
 		assertNull(luaState.toJavaObject(1, Object.class));
 		assertEquals(Boolean.FALSE, luaState.toJavaObject(2, Boolean.class));
-		assertEquals(Double.valueOf(1.0), luaState
-				.toJavaObject(3, Double.class));
+		assertEquals(Double.valueOf(1.0),
+				luaState.toJavaObject(3, Double.class));
 		assertEquals("test", luaState.toJavaObject(4, String.class));
 		assertEquals("1", luaState.toJavaObject(5, String.class));
-		assertArrayEquals(new Double[] { 1.0 }, luaState.toJavaObject(6,
-				Double[].class));
+		assertArrayEquals(new Double[] { 1.0 },
+				luaState.toJavaObject(6, Double[].class));
 		assertSame(javaFunction, luaState.toJavaObject(7, JavaFunction.class));
 		assertSame(object, luaState.toJavaObject(8, Object.class));
 		assertTrue(luaState.toJavaObject(9, Object.class) instanceof LuaValueProxy);
@@ -714,19 +715,8 @@ public class LuaStateTest extends AbstractLuaTest {
 	public void testThread() throws Exception {
 		// Create thread
 		luaState.openLibs();
-		luaState.register(new NamedJavaFunction() {
-			public int invoke(LuaState luaState) {
-				luaState.pushInteger(luaState.toInteger(1));
-				return luaState.yield(1);
-			}
-
-			public String getName() {
-				return "yieldfunc";
-			}
-		});
-		luaState.load("function run(n)\n" + "yieldfunc(n + 1)\n"
-				+ "coroutine.yield(n + 2)\n" + "return n + 3\n" + "end",
-				"threadtest");
+		luaState.load("function run(n)\n" + "coroutine.yield(n + 1)\n"
+				+ "return n + 2\n" + "end", "threadtest");
 		luaState.call(0, 0);
 		luaState.getGlobal("run");
 		luaState.newThread();
@@ -741,16 +731,9 @@ public class LuaStateTest extends AbstractLuaTest {
 
 		// Resume
 		assertEquals(1, luaState.resume(1, 0));
-		assertEquals(LuaState.YIELD, luaState.status(1));
+		assertEquals(LuaState.OK, luaState.status(1));
 		assertEquals(2, luaState.getTop());
 		assertEquals(3, luaState.toInteger(-1));
-		luaState.pop(1);
-
-		// Resume
-		assertEquals(1, luaState.resume(1, 0));
-		assertEquals(0, luaState.status(1));
-		assertEquals(2, luaState.getTop());
-		assertEquals(4, luaState.toInteger(-1));
 		luaState.pop(1);
 
 		// Cleanup
@@ -797,11 +780,11 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals(1.0, luaState.checkNumber(3), 0.0);
 		assertEquals(1.0, luaState.checkNumber(1, 1.0), 0.0);
 		assertEquals("test", luaState.checkString(4));
-		assertEquals("test", luaState.checkString(1, "test"));
-		assertEquals("test", luaState.checkOption(4, new String[] { "a", "b",
-				"test" }));
-		assertEquals("test", luaState.checkOption(1, new String[] { "a", "b",
-				"test" }, "test"));
+		// assertEquals("test", luaState.checkString(1, "test"));
+		assertEquals(2,
+				luaState.checkOption(4, new String[] { "a", "b", "test" }));
+		assertEquals(2, luaState.checkOption(1,
+				new String[] { "a", "b", "test" }, "test"));
 		luaState.checkType(3, LuaType.NUMBER);
 		luaState.checkArg(3, true, "");
 
@@ -823,8 +806,9 @@ public class LuaStateTest extends AbstractLuaTest {
 			luaRuntimeException = e;
 		}
 		assertNotNull(luaRuntimeException);
-		assertEquals("bad argument #4 (expected number, got string)",
+		assertEquals("bad argument #4 (number expected, got string)",
 				luaRuntimeException.getMessage());
+		luaState.pop(1);
 
 		// Cleanup
 		luaState.pop(10);
@@ -845,8 +829,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.pop(1);
 
 		// Implement the runnable interface in Lua
-		luaState
-				.load("return { run = function () hasRun = true end }", "proxy");
+		luaState.load("return { run = function () hasRun = true end }", "proxy");
 		luaState.call(0, 1);
 
 		// Get the proxy
@@ -884,9 +867,11 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals(LuaType.NIL, luaState.type(-1));
 		luaState.pop(1);
 		luaState.openLib(library);
+		assertEquals(LuaType.TABLE, luaState.type(-1));
 		luaState.getGlobal(tableName);
 		assertEquals(LuaType.TABLE, luaState.type(-1));
-		luaState.pop(1);
+		assertTrue(luaState.rawEqual(-1, -2));
+		luaState.pop(2);
 
 	}
 
