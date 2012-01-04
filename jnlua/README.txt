@@ -43,10 +43,6 @@ method to accept undefined stack indexes.
 
 - Removed the setFEnv and getFEnv methods from LuaState.
 
-- Removed the yield method from LuaState. (This is due to the Lua 5.2
-implementation longjumping immediately, thus causing an unmanaged Java
-to native transition.)
-
 - Changed the input stream based load method in LuaState to accept an
 additional mode argument. Also, the source (aka chunkname) argument is
 no longer auto-prefixed with an equals sign.

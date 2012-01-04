@@ -151,6 +151,12 @@ public class LuaState {
 	private long luaThread;
 
 	/**
+	 * The yield flag. This field is modified from both the JNI side and Java
+	 * side and signals a pending yield.
+	 */
+	private boolean yield;
+
+	/**
 	 * Ensures proper finalization of this Lua state.
 	 */
 	private Object finalizeGuardian;
@@ -1579,6 +1585,23 @@ public class LuaState {
 	public synchronized int status(int index) {
 		check();
 		return lua_status(index);
+	}
+
+	/**
+	 * Yields the running thread, popping the specified number of values from
+	 * the top of the stack and passing them as return values to the thread
+	 * which has resumed the running thread. The method must be used exclusively
+	 * at the exit point of Java functions, i.e.
+	 * <code>return luaState.yield(n)</code>.
+	 * 
+	 * @param returnCount
+	 *            the number of results to pass
+	 * @return the return value of the Java function
+	 */
+	public synchronized int yield(int returnCount) {
+		check();
+		yield = true;
+		return returnCount;
 	}
 
 	// -- Reference

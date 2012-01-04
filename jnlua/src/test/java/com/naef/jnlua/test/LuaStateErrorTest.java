@@ -304,7 +304,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 			luaState.pushNumber(0.0);
 		}
 	}
-	
+
 	/**
 	 * lessThan(int, int) with illegal types.
 	 */
@@ -626,6 +626,47 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	public void testIllegalStatus() {
 		luaState.pushNumber(0.0);
 		luaState.status(1);
+	}
+
+	/**
+	 * yield(int) with no running thread.
+	 */
+	@Test(expected = LuaRuntimeException.class)
+	public void testIllegalYield1() {
+		luaState.register(new NamedJavaFunction() {
+			@Override
+			public int invoke(LuaState luaState) {
+				return luaState.yield(0);
+			}
+			
+			@Override
+			public String getName() {
+				return "yieldfunc";
+			}
+		});
+		luaState.load("return yieldfunc()", "=yieldnothread");
+		luaState.call(0,  0);
+	}
+
+	/**
+	 * yield(int) with insufficient arguments.
+	 */
+	@Test(expected = LuaRuntimeException.class)
+	public void testIllegalYield2() {
+		luaState.register(new NamedJavaFunction() {
+			@Override
+			public int invoke(LuaState luaState) {
+				return luaState.yield(1);
+			}
+			
+			@Override
+			public String getName() {
+				return "yieldfunc";
+			}
+		});
+		luaState.load("yieldfunc()", "=yieldnoarguments");
+		luaState.newThread();
+		luaState.resume(1, 0);
 	}
 
 	/**

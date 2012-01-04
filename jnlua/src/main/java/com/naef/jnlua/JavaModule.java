@@ -33,7 +33,6 @@ public class JavaModule {
 		PRIMITIVE_TYPES.put("short", Short.TYPE);
 		PRIMITIVE_TYPES.put("void", Void.TYPE);
 	}
-	private static final NamedJavaFunction[] EMPTY_MODULE = new NamedJavaFunction[0];
 
 	// -- State
 	final NamedJavaFunction pairs = new Pairs();
@@ -139,20 +138,25 @@ public class JavaModule {
 
 			// Import
 			if (doImport) {
-				// TODO: This won't work anymore
-				className = clazz.getName();
-				int lastDotIndex = className.lastIndexOf('.');
-				if (lastDotIndex >= 0) {
-					String packageName = className.substring(0, lastDotIndex);
-					className = className.substring(lastDotIndex + 1);
-					luaState.register(packageName, EMPTY_MODULE, true);
-					luaState.pushJavaObject(clazz);
-					luaState.setField(-2, className);
-					luaState.pop(1);
-				} else {
-					luaState.pushJavaObject(clazz);
-					luaState.setGlobal(className);
+				luaState.rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
+				String name = clazz.getName();
+				int index = name.indexOf('.');
+				while (index >= 0) {
+					String part = name.substring(0, index);
+					luaState.getField(-1, part);
+					if (!luaState.isTable(-1)) {
+						luaState.pop(1);
+						luaState.newTable();
+						luaState.pushValue(-1);
+						luaState.setField(-3, part);
+					}
+					luaState.remove(-2);
+					name = name.substring(index + 1);
+					index = name.indexOf('.');
 				}
+				luaState.pushValue(-2);
+				luaState.setField(-2, name);
+				luaState.pop(1);
 			}
 			luaState.pushBoolean(doImport);
 

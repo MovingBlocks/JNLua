@@ -715,10 +715,18 @@ public class LuaStateTest extends AbstractLuaTest {
 	public void testThread() throws Exception {
 		// Create thread
 		luaState.openLibs();
-		luaState.load("function run(n)\n" + "coroutine.yield(n + 1)\n"
-				+ "return n + 2\n" + "end", "threadtest");
-		luaState.call(0, 0);
-		luaState.getGlobal("run");
+		luaState.register(new NamedJavaFunction() {
+			public int invoke(LuaState luaState) {
+				luaState.pushInteger(luaState.toInteger(1));
+				return luaState.yield(1);
+			}
+
+			public String getName() {
+				return "yieldfunc";
+			}
+		});
+		luaState.load("yieldfunc(... + 1)\n" + "coroutine.yield(... + 2)\n"
+				+ "return ... + 3\n", "=threadtest");
 		luaState.newThread();
 
 		// Start
@@ -731,9 +739,16 @@ public class LuaStateTest extends AbstractLuaTest {
 
 		// Resume
 		assertEquals(1, luaState.resume(1, 0));
-		assertEquals(LuaState.OK, luaState.status(1));
+		assertEquals(LuaState.YIELD, luaState.status(1));
 		assertEquals(2, luaState.getTop());
 		assertEquals(3, luaState.toInteger(-1));
+		luaState.pop(1);
+
+		// Resume
+		assertEquals(1, luaState.resume(1, 0));
+		assertEquals(LuaState.OK, luaState.status(1));
+		assertEquals(2, luaState.getTop());
+		assertEquals(4, luaState.toInteger(-1));
 		luaState.pop(1);
 
 		// Cleanup

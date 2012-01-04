@@ -120,6 +120,7 @@ static int writeOutputStream (lua_State *luaState, const void *data, size_t size
 static jclass luaStateClass = NULL;
 static jfieldID luaStateId = 0;
 static jfieldID luaThreadId = 0;
+static jfieldID yieldId = 0;
 static jclass javaFunctionInterface = NULL;
 static jmethodID invokeId = 0;
 static jclass luaRuntimeExceptionClass = NULL;
@@ -1623,7 +1624,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM *vm, void *reserved) {
 	/* Lookup and pin classes, fields and methods */
 	if (!(luaStateClass = referenceClass(env, "com/naef/jnlua/LuaState")) ||
 			!(luaStateId = (*env)->GetFieldID(env, luaStateClass, "luaState", "J")) ||
-			!(luaThreadId = (*env)->GetFieldID(env, luaStateClass, "luaThread", "J"))) {
+			!(luaThreadId = (*env)->GetFieldID(env, luaStateClass, "luaThread", "J")) ||
+			!(yieldId = (*env)->GetFieldID(env, luaStateClass, "yield", "Z"))) {
 		return JNLUA_JNIVERSION;
 	}
 	if (!(javaFunctionInterface = referenceClass(env, "com/naef/jnlua/JavaFunction")) ||
@@ -1862,6 +1864,16 @@ static void setLuaThread (JNIEnv *env, jobject obj, lua_State *luaState) {
 	(*env)->SetLongField(env, obj, luaThreadId, (jlong) (uintptr_t) luaState);
 }
 
+/* Returns the yield flag from the Java state */
+static jboolean getYield (JNIEnv *env, jobject obj) {
+	return (*env)->GetBooleanField(env, obj, yieldId);
+}
+
+/* Sets the yield flag in the Java state */
+static void setYield (JNIEnv *env, jobject obj, jboolean yield) {
+	(*env)->SetBooleanField(env, obj, yieldId, yield);
+}
+
 /* ---- Lua state operations ---- */
 /* Returns the JNI environment from the Lua state. */
 static JNIEnv *getJniEnv (lua_State *luaState) {
@@ -2072,6 +2084,7 @@ static int callJavaFunction (lua_State *luaState) {
 	}
 	
 	/* Perform the call, handling coroutine situations. */
+	setYield(env, obj, JNI_FALSE);
 	javaLuaThread = getLuaThread(env, obj);
 	if (javaLuaThread == luaState) {
 		result = (*env)->CallIntMethod(env, javaFunctionObj, invokeId, obj);
@@ -2096,6 +2109,16 @@ static int callJavaFunction (lua_State *luaState) {
 		/* Error out */
 		lua_error(luaState);
 	}
+	
+	/* Handle yield */
+	if (getYield(env, obj)) {
+		if (result < 0 || result > lua_gettop(luaState)) {
+			lua_pushliteral(luaState, "illegal return count");
+			lua_error(luaState);
+		}
+		return lua_yield(luaState, result);
+	}
+	
 	return result;
 }
 
