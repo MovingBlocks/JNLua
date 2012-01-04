@@ -5,7 +5,7 @@ See LICENSE.txt for license terms.
 
 module(..., package.seeall)
 
--- java.require() test
+-- java.require()
 function testRequire ()
 	-- No import
 	local class, imported = java.require("java.lang.System")

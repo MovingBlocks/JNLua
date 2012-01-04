@@ -2347,6 +2347,11 @@ public class LuaState {
 		SETSTEPMUL,
 
 		/**
+		 * Set major increment.
+		 */
+		SETMAJORINC,
+
+		/**
 		 * Returns whether the collector is running (i.e. not stopped).
 		 */
 		ISRUNNING,

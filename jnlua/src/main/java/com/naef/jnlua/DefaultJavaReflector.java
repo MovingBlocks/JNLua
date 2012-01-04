@@ -80,10 +80,10 @@ public class DefaultJavaReflector implements JavaReflector {
 			return index;
 		case NEWINDEX:
 			return newIndex;
-		case EQ:
-			return equal;
 		case LEN:
 			return length;
+		case EQ:
+			return equal;
 		case LT:
 			return lessThan;
 		case LE:

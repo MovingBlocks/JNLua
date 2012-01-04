@@ -12,10 +12,12 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import com.naef.jnlua.JavaFunction;
+import com.naef.jnlua.LuaGcMetamethodException;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaStackTraceElement;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.LuaSyntaxException;
+import com.naef.jnlua.LuaState.Library;
 
 /**
  * Contains unit tests for Lua exceptions.
@@ -121,6 +123,26 @@ public class LuaExceptionTest extends AbstractLuaTest {
 			luaSyntaxException = e;
 		}
 		assertNotNull(luaSyntaxException);
+	}
+
+	/**
+	 * Tests the generation of a Lua GC metamethod exception on a Lua value
+	 * raising an error in its <code>__gc</code> metamethod.
+	 */
+	@Test
+	public void testLuaGcMetamethodException() throws Exception {
+		LuaGcMetamethodException luaGcMetamethodException = null;
+		luaState.openLib(Library.BASE);
+		luaState.pop(1);
+		luaState.load(
+				"setmetatable({}, { __gc = function() error(\"gc\") end })\n"
+						+ "collectgarbage()", "=testLuaGcMetamethodException");
+		try {
+			luaState.call(0, 0);
+		} catch (LuaGcMetamethodException e) {
+			luaGcMetamethodException = e;
+		}
+		assertNotNull(luaGcMetamethodException);
 	}
 
 	// -- Private classes

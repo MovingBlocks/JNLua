@@ -25,6 +25,8 @@ import org.junit.Test;
 import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
+import com.naef.jnlua.LuaState.ArithOperator;
+import com.naef.jnlua.LuaState.GcAction;
 import com.naef.jnlua.LuaState.RelOperator;
 import com.naef.jnlua.LuaType;
 import com.naef.jnlua.LuaValueProxy;
@@ -38,17 +40,56 @@ public class LuaStateTest extends AbstractLuaTest {
 	private JavaFunction javaFunction;
 	private Object object;
 
-	// ---- Test cases
+	// -- Test cases
 	/**
 	 * Tests the life-cycle methods.
 	 */
 	@Test
 	public void testLifeCycle() throws Exception {
+		// isOpen()
 		assertTrue(luaState.isOpen());
-		int kilobytes = luaState.gc(LuaState.GcAction.COUNT, 0);
-		assertTrue(kilobytes > 0);
+
+		// gc()
+		assertEquals(1, luaState.gc(GcAction.ISRUNNING, 0));
+		assertEquals(0, luaState.gc(GcAction.STOP, 0));
+		assertEquals(0, luaState.gc(GcAction.ISRUNNING, 0));
+		assertEquals(0, luaState.gc(GcAction.RESTART, 0));
+		assertEquals(1, luaState.gc(GcAction.ISRUNNING, 0));
+		assertEquals(0, luaState.gc(GcAction.COLLECT, 0));
+		assertTrue((long) luaState.gc(GcAction.COUNT, 0) * 1024
+				+ luaState.gc(GcAction.COUNTB, 0) > 0);
+		assertEquals(0, luaState.gc(GcAction.STEP, 0));
+		assertTrue(luaState.gc(GcAction.SETPAUSE, 200) > 0);
+		assertTrue(luaState.gc(GcAction.SETSTEPMUL, 200) > 0);
+		assertEquals(0, luaState.gc(GcAction.GEN, 0));
+		assertEquals(0, luaState.gc(GcAction.INC, 0));
+
+		// close()
 		luaState.close();
 		assertFalse(luaState.isOpen());
+	}
+
+	/**
+	 * Tests the fields.
+	 */
+	@Test
+	public void testFields() {
+		// REGISTRYINDEX
+		luaState.rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_MAINTHREAD);
+		assertEquals(LuaType.THREAD, luaState.type(-1));
+		luaState.pop(1);
+		luaState.rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
+		assertEquals(LuaType.TABLE, luaState.type(-1));
+		luaState.pop(1);
+
+		// VERSION
+		assertEquals("1.0", LuaState.VERSION);
+
+		// LUA_VERSION
+		assertEquals("5.2", LuaState.LUA_VERSION);
+
+		// Finish
+		assertEquals(0, luaState.getTop());
 	}
 
 	/**
@@ -416,7 +457,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.openLibs();
 		makeStack();
 
-		// equal()
+		// compare()
 		for (int i = 1; i <= 10; i++) {
 			for (int j = 1; j <= 10; j++) {
 				if (i == j) {
@@ -428,24 +469,30 @@ public class LuaStateTest extends AbstractLuaTest {
 				}
 			}
 		}
-
-		// lessThan()
-		for (int i = 1; i <= 10; i++) {
-			if (luaState.isNumber(i)) {
-				assertFalse(String.format("%d", i),
-						luaState.compare(i, i, RelOperator.LT));
+		luaState.pushInteger(-1);
+		luaState.pushInteger(0);
+		luaState.pushInteger(1);
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				assertEquals(i == j,
+						luaState.compare(i - 3, j - 3, RelOperator.EQ));
 			}
 		}
-
-		// lessThanOrEqual()
-		for (int i = 1; i <= 10; i++) {
-			if (luaState.isNumber(i)) {
-				assertTrue(String.format("%d", i),
-						luaState.compare(i, i, RelOperator.LE));
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				assertEquals(i < j,
+						luaState.compare(i - 3, j - 3, RelOperator.LT));
 			}
 		}
+		for (int i = 0; i < 3; i++) {
+			for (int j = 0; j < 3; j++) {
+				assertEquals(i <= j,
+						luaState.compare(i - 3, j - 3, RelOperator.LE));
+			}
+		}
+		luaState.pop(3);
 
-		// length()
+		// rawLen()
 		assertEquals(0, luaState.rawLen(1));
 		assertEquals(0, luaState.rawLen(2));
 		// assertEquals(0, luaState.length(3)); -> would change type
@@ -578,12 +625,35 @@ public class LuaStateTest extends AbstractLuaTest {
 	 */
 	@Test
 	public void testStackOperation() throws Exception {
+		// absIndex()
+		luaState.pushInteger(0);
+		assertEquals(1, luaState.absIndex(1));
+		assertEquals(1, luaState.absIndex(-1));
+		luaState.pop(1);
+
+		// arith()
+		testArith(1, 2, ArithOperator.ADD, 3);
+		testArith(1, 2, ArithOperator.SUB, -1);
+		testArith(2, 3, ArithOperator.MUL, 6);
+		testArith(10, 2, ArithOperator.DIV, 5);
+		testArith(17, 5, ArithOperator.MOD, 2);
+		testArith(3, 2, ArithOperator.POW, 9);
+		testArith(7, null, ArithOperator.UNM, -7);
+
 		// concat()
 		luaState.pushString("a");
 		luaState.pushString("b");
 		luaState.concat(2);
 		assertEquals("ab", luaState.toString(1));
 		luaState.pop(1);
+
+		// copy()
+		luaState.pushInteger(1);
+		luaState.pushInteger(2);
+		luaState.copy(-1, -2);
+		assertEquals(2, luaState.toInteger(-2));
+		assertEquals(2, luaState.toInteger(-1));
+		luaState.pop(2);
 
 		// getTop()
 		assertEquals(0, luaState.getTop());
@@ -594,6 +664,12 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.pushNumber(2);
 		luaState.insert(1);
 		assertArrayEquals(new Object[] { 2.0, 1.0 }, getStack());
+
+		// len()
+		luaState.pushString("abc");
+		luaState.len(-1);
+		assertEquals(3, luaState.toInteger(-1));
+		luaState.pop(2);
 
 		// pop()
 		luaState.pop(1);
@@ -689,10 +765,10 @@ public class LuaStateTest extends AbstractLuaTest {
 	}
 
 	/**
-	 * Tests the meta table methods.
+	 * Tests the metatable methods.
 	 */
 	@Test
-	public void testMetaTable() throws Exception {
+	public void testMetatable() throws Exception {
 		// setMetaTable()
 		luaState.newTable();
 		luaState.newTable();
@@ -795,7 +871,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals(1.0, luaState.checkNumber(3), 0.0);
 		assertEquals(1.0, luaState.checkNumber(1, 1.0), 0.0);
 		assertEquals("test", luaState.checkString(4));
-		// assertEquals("test", luaState.checkString(1, "test"));
+		assertEquals("test", luaState.checkString(1, "test"));
 		assertEquals(2,
 				luaState.checkOption(4, new String[] { "a", "b", "test" }));
 		assertEquals(2, luaState.checkOption(1,
@@ -888,6 +964,20 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertTrue(luaState.rawEqual(-1, -2));
 		luaState.pop(2);
 
+	}
+
+	/**
+	 * Tests an arithmetic operation.
+	 */
+	private void testArith(int operand1, Integer operand2,
+			ArithOperator operator, int result) {
+		luaState.pushInteger(operand1);
+		if (operand2 != null) {
+			luaState.pushInteger(operand2.intValue());
+		}
+		luaState.arith(operator);
+		assertEquals(result, luaState.toInteger(-1));
+		luaState.pop(1);
 	}
 
 	/**

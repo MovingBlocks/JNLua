@@ -1558,20 +1558,22 @@ JNIEXPORT jdouble JNICALL Java_com_naef_jnlua_LuaState_lua_1optnumber (JNIEnv *e
 JNIEXPORT jstring JNICALL Java_com_naef_jnlua_LuaState_lua_1optstring (JNIEnv *env, jobject obj, jint narg, jstring d) {
 	lua_State *luaState;
 	const char *dUtf;
-	const char *result;
+	const char *string;
+	jstring result;
 	
 	dUtf = NULL;
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
 		dUtf = getStringUtfChars(env, luaState, d);
-		result = luaL_optstring(luaState, narg, dUtf);
+		string = luaL_optstring(luaState, narg, dUtf);
+		result = string != dUtf ? (*env)->NewStringUTF(env, string) : d;
 	JNLUA_CATCH
 		result = NULL;
 	JNLUA_END
 	if (dUtf) {
 		(*env)->ReleaseStringUTFChars(env, d, dUtf);
 	}
-	return (*env)->NewStringUTF(env, result); 
+	return result;
 }
 
 /* ---- Function arguments ---- */
