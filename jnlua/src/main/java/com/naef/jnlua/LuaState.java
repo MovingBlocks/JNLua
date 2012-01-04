@@ -299,7 +299,7 @@ public class LuaState {
 	 *            the Java reflector
 	 */
 	public synchronized void setJavaReflector(JavaReflector javaReflector) {
-		if (converter == null) {
+		if (javaReflector == null) {
 			throw new NullPointerException();
 		}
 		this.javaReflector = javaReflector;
@@ -363,6 +363,7 @@ public class LuaState {
 		this.converter = converter;
 	}
 
+	// -- Life cycle
 	/**
 	 * Returns whether this Lua state is open.
 	 * 
@@ -376,7 +377,6 @@ public class LuaState {
 		return isOpenInternal();
 	}
 
-	// -- Life cycle
 	/**
 	 * Closes this Lua state and releases all resources.
 	 * 
@@ -569,7 +569,7 @@ public class LuaState {
 		lua_pcall(argCount, returnCount);
 	}
 
-	// -- Global
+	// -- Globals
 	/**
 	 * Pushes the value of a global variable on the stack.
 	 * 
@@ -629,6 +629,20 @@ public class LuaState {
 	}
 
 	/**
+	 * Pushes a Java object on the stack with conversion. The object is
+	 * processed the by the configured converter.
+	 * 
+	 * @param object
+	 *            the Java object
+	 * @see #getConverter()
+	 * @see #setConverter(Converter)
+	 */
+	public synchronized void pushJavaObject(Object object) {
+		check();
+		getConverter().convertJavaObject(this, object);
+	}
+
+	/**
 	 * Pushes a Java object on the stack. The object is pushed "as is", i.e.
 	 * without conversion.
 	 * 
@@ -650,20 +664,6 @@ public class LuaState {
 	public synchronized void pushJavaObjectRaw(Object object) {
 		check();
 		lua_pushjavaobject(object);
-	}
-
-	/**
-	 * Pushes a Java object on the stack with conversion. The object is
-	 * processed the by the configured converter.
-	 * 
-	 * @param object
-	 *            the Java object
-	 * @see #getConverter()
-	 * @see #setConverter(Converter)
-	 */
-	public synchronized void pushJavaObject(Object object) {
-		check();
-		getConverter().convertJavaObject(this, object);
 	}
 
 	/**
@@ -764,6 +764,27 @@ public class LuaState {
 	}
 
 	/**
+	 * Returns whether the value at the specified stack index is convertible to
+	 * a Java object of the specified type. The conversion is checked by the
+	 * configured converter.
+	 * 
+	 * <p>
+	 * The stack index may be undefined.
+	 * </p>
+	 * 
+	 * @param index
+	 *            the stack index
+	 * @return whether the value is convertible to a Java object of the
+	 *         specified type
+	 * @see #setConverter(Converter)
+	 * @see #getConverter()
+	 */
+	public synchronized boolean isJavaObject(int index, Class<?> type) {
+		check();
+		return converter.getTypeDistance(this, index, type) != Integer.MAX_VALUE;
+	}
+
+	/**
 	 * Returns whether the value at the specified stack index is a Java object.
 	 * 
 	 * <p>
@@ -784,27 +805,6 @@ public class LuaState {
 	public synchronized boolean isJavaObjectRaw(int index) {
 		check();
 		return lua_isjavaobject(index) != 0;
-	}
-
-	/**
-	 * Returns whether the value at the specified stack index is convertible to
-	 * a Java object of the specified type. The conversion is checked by the
-	 * configured converter.
-	 * 
-	 * <p>
-	 * The stack index may be undefined.
-	 * </p>
-	 * 
-	 * @param index
-	 *            the stack index
-	 * @return whether the value is convertible to a Java object of the
-	 *         specified type
-	 * @see #setConverter(Converter)
-	 * @see #getConverter()
-	 */
-	public synchronized boolean isJavaObject(int index, Class<?> type) {
-		check();
-		return converter.getTypeDistance(this, index, type) != Integer.MAX_VALUE;
 	}
 
 	/**
@@ -928,6 +928,11 @@ public class LuaState {
 	 * Compares the values at two specified stack indexes for the specified
 	 * operator according to Lua semantics.
 	 * 
+	 * <p>
+	 * The stack index may be undefined in case the <code>EQ</code> operator is
+	 * specified.
+	 * </p>
+	 * 
 	 * @param index1
 	 *            the first stack index
 	 * @param index2
@@ -951,7 +956,7 @@ public class LuaState {
 	 * @param index2
 	 *            the second stack index
 	 * @return whether the values are equal
-	 * @deprecated Please use {@link #compare(int, int, RelOperator)} directly.
+	 * @deprecated instead use {@link #compare(int, int, RelOperator)}
 	 */
 	public synchronized boolean equal(int index1, int index2) {
 		return compare(index1, index2, RelOperator.EQ);
@@ -966,7 +971,7 @@ public class LuaState {
 	 * @param index
 	 *            the stack index
 	 * @return the length
-	 * @deprecated Please use {@link #rawLen(int)} directly.
+	 * @deprecated instead use {@link #rawLen(int)}
 	 */
 	public synchronized int length(int index) {
 		return rawLen(index);
@@ -982,7 +987,7 @@ public class LuaState {
 	 *            the second stack index
 	 * @return whether the value at the first index is less than the value at
 	 *         the second index
-	 * @deprecated Please use {@link #compare(int, int, RelOperator)} directly.
+	 * @deprecated instead use {@link #compare(int, int, RelOperator)}
 	 */
 	public synchronized boolean lessThan(int index1, int index2)
 			throws LuaMemoryAllocationException, LuaRuntimeException {
@@ -1061,26 +1066,6 @@ public class LuaState {
 	}
 
 	/**
-	 * Returns the Java object of the value at the specified stack index. If the
-	 * value is not a Java object, the method returns <code>null</code>.
-	 * 
-	 * <p>
-	 * Note that the method does not convert values to Java objects. If you
-	 * require <i>any</i> Java object that represents the value at the specified
-	 * index, then invoke <code>toJavaObject(index, Object.class)</code>.
-	 * </p>
-	 * 
-	 * @param index
-	 *            the stack index
-	 * @return the Java object, or <code>null</code>
-	 * @see #toJavaObject(int, Class)
-	 */
-	public synchronized Object toJavaObjectRaw(int index) {
-		check();
-		return lua_tojavaobject(index);
-	}
-
-	/**
 	 * Returns a Java object of the specified type representing the value at the
 	 * specified stack index. The value must be convertible to a Java object of
 	 * the specified type. The conversion is executed by the configured
@@ -1099,6 +1084,26 @@ public class LuaState {
 	public synchronized <T> T toJavaObject(int index, Class<T> type) {
 		check();
 		return converter.convertLuaValue(this, index, type);
+	}
+
+	/**
+	 * Returns the Java object of the value at the specified stack index. If the
+	 * value is not a Java object, the method returns <code>null</code>.
+	 * 
+	 * <p>
+	 * Note that the method does not convert values to Java objects. If you
+	 * require <i>any</i> Java object that represents the value at the specified
+	 * index, then invoke <code>toJavaObject(index, Object.class)</code>.
+	 * </p>
+	 * 
+	 * @param index
+	 *            the stack index
+	 * @return the Java object, or <code>null</code>
+	 * @see #toJavaObject(int, Class)
+	 */
+	public synchronized Object toJavaObjectRaw(int index) {
+		check();
+		return lua_tojavaobject(index);
 	}
 
 	/**
@@ -1169,7 +1174,8 @@ public class LuaState {
 	 * type name is the canonical class name.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be undefined in which case the method returns the
+	 * string <code>"undefined"</code>.
 	 * </p>
 	 * 
 	 * @param index
@@ -1182,7 +1188,7 @@ public class LuaState {
 		check();
 		LuaType type = type(index);
 		if (type == null) {
-			return "no value";
+			return "undefined";
 		}
 		switch (type) {
 		case USERDATA:

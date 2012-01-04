@@ -87,7 +87,7 @@ static jobject getJavaState(JNIEnv *env, lua_State *luaState);
 static void setJavaState(JNIEnv *env, lua_State *luaState, jobject javaState);
 
 /* ---- Checks ---- */
-static int validindex (lua_State *luaState, int index);
+static int validindex(lua_State *luaState, int index);
 static void checkindex(JNIEnv *env, lua_State *luaState, int index);
 static void checkrealindex(JNIEnv *env, lua_State *luaState, int index);
 static void checktype(JNIEnv *env, lua_State *luaState, int index, int type);
@@ -777,6 +777,9 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1toboolean (JNIEnv *env,
 	int result;
 	
 	luaState = getLuaThread(env, obj);
+	if (!validindex(luaState, index)) {
+		return 0;
+	}
 	JNLUA_TRY
 		result = lua_toboolean(luaState, index);
 	JNLUA_CATCH
@@ -889,7 +892,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1type (JNIEnv *env, jobj
 	
 	luaState = getLuaThread(env, obj);
 	if (!validindex(luaState, index)) {
-		return 0;
+		return LUA_TNONE;
 	}
 	JNLUA_TRY
 		result = lua_type(luaState, index);

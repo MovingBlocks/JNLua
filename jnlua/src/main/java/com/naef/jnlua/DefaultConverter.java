@@ -258,6 +258,12 @@ public class DefaultConverter implements Converter {
 	// -- Java converter methods
 	@Override
 	public int getTypeDistance(LuaState luaState, int index, Class<?> formalType) {
+		// Handle none
+		LuaType luaType = luaState.type(index);
+		if (luaType == null) {
+			return Integer.MAX_VALUE;
+		}
+		
 		// Handle void
 		if (formalType == Void.TYPE) {
 			return Integer.MAX_VALUE;
@@ -269,7 +275,7 @@ public class DefaultConverter implements Converter {
 		}
 
 		// Handle Lua types
-		switch (luaState.type(index)) {
+		switch (luaType) {
 		case NIL:
 			return 1;
 		case BOOLEAN:
@@ -343,6 +349,12 @@ public class DefaultConverter implements Converter {
 	@Override
 	public <T> T convertLuaValue(LuaState luaState, int index,
 			Class<T> formalType) {
+		// Handle none
+		LuaType luaType = luaState.type(index);
+		if (luaType == null) {
+			throw new IllegalArgumentException("undefined index: " + index);
+		}
+		
 		// Handle void
 		if (formalType == Void.TYPE) {
 			throw new ClassCastException(String.format(
@@ -356,7 +368,7 @@ public class DefaultConverter implements Converter {
 		}
 
 		// Handle Lua types
-		switch (luaState.type(index)) {
+		switch (luaType) {
 		case NIL:
 			return null;
 		case BOOLEAN:
