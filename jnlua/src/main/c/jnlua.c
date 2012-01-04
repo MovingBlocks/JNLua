@@ -1,5 +1,5 @@
 /*
- * $Id: jnlua.c,v 1.2 2008/11/07 20:07:54 anaef Exp $
+ * $Id$
  * See LICENSE.txt for license terms.
  */
 
@@ -62,6 +62,12 @@ typedef struct StreamStruct  {
 	jbyte* bytes;
 	jboolean isCopy;
 } Stream;
+
+/* Strucutre for holding a jstring and its UTF chars. */
+typedef struct StringStruct {
+	jstring *string;
+	const char *utf;
+} String;
 
 /* ---- JNI helpers ---- */
 static jclass referenceClass (JNIEnv *env, const char *className);
@@ -149,6 +155,8 @@ static jmethodID readId = 0;
 static jclass outputStreamClass = NULL;
 static jmethodID writeId = 0;
 static jclass ioExceptionClass = NULL;
+static jclass enumClass = NULL;
+static jmethodID nameId = 0;
 static int initialized = 0;
 static jmp_buf initJumpBuffer;
 
@@ -1436,6 +1444,56 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1argcheck (JNIEnv *env, 
 	}
 }
 
+/* lua_checkenum() */
+JNIEXPORT jobject JNICALL Java_com_naef_jnlua_LuaState_lua_1checkenum (JNIEnv *env, jobject obj, jint narg, jobject def, jobjectArray lst) {
+	lua_State *luaState;
+	jstring defString;
+	const char *defUtf;
+	jsize lstLength, i;
+	jstring *lstString;
+	const char **lstUtf;
+	jobject result;
+	
+	defUtf = NULL;
+	lstLength = 0;
+	lstString = NULL;
+	lstUtf = NULL;
+	luaState = getLuaThread(env, obj);
+	JNLUA_TRY
+		if (def != NULL) {
+			defString = (*env)->CallObjectMethod(env, def, nameId);
+			defUtf = getStringUtfChars(env, luaState, defString);
+		}
+		checknotnull(env, luaState, lst);
+		lstLength = (*env)->GetArrayLength(env, lst);
+		lstString = (jstring *) calloc(lstLength + 1, sizeof(String));
+		lstUtf = (const char **) calloc(lstLength + 1, sizeof(const char *));
+		check(env, luaState, lstString != NULL && lstUtf != NULL, luaMemoryAllocationExceptionClass, "JNI error: calloc() failed");
+		for (i = 0; i < lstLength; i++) {
+			lstString[i] = (*env)->CallObjectMethod(env, (*env)->GetObjectArrayElement(env, lst, i), nameId);
+			lstUtf[i] = getStringUtfChars(env, luaState, lstString[i]);
+		}
+		result = (*env)->GetObjectArrayElement(env, lst, luaL_checkoption(luaState, narg, defUtf, lstUtf));
+	JNLUA_CATCH
+		result = NULL;
+	JNLUA_END
+	if (lstUtf) {
+		for (i = 0; i < lstLength; i++) {
+			if (lstUtf[i]) {
+				(*env)->ReleaseStringUTFChars(env, lstString[i], lstUtf[i]);
+			}
+		}
+		free((void *) lstUtf);
+	}
+	if (lstString) {
+		free((void *) lstString);
+	}
+	if (defUtf) {
+		(*env)->ReleaseStringUTFChars(env, def, defUtf);
+	}
+	return result;
+}
+
 /* lua_checkinteger() */
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkinteger (JNIEnv *env, jobject obj, jint narg) {
 	lua_State *luaState;
@@ -1469,11 +1527,13 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkoption (JNIEnv *en
 	lua_State *luaState;
 	const char *defUtf;
 	jsize lstLength, i;
+	jstring *lstString;
 	const char **lstUtf;
 	int result;
 	
 	defUtf = NULL;
 	lstLength = 0;
+	lstString = NULL;
 	lstUtf = NULL;
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
@@ -1482,10 +1542,12 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkoption (JNIEnv *en
 		}
 		checknotnull(env, luaState, lst);
 		lstLength = (*env)->GetArrayLength(env, lst);
+		lstString = (jstring *) calloc(lstLength + 1, sizeof(String));
 		lstUtf = (const char **) calloc(lstLength + 1, sizeof(const char *));
-		check(env, luaState, lstUtf != NULL, luaMemoryAllocationExceptionClass, "JNI error: calloc() failed");
+		check(env, luaState, lstString != NULL && lstUtf != NULL, luaMemoryAllocationExceptionClass, "JNI error: calloc() failed");
 		for (i = 0; i < lstLength; i++) {
-			lstUtf[i] = getStringUtfChars(env, luaState, (*env)->GetObjectArrayElement(env, lst, i));
+			lstString[i] = (*env)->GetObjectArrayElement(env, lst, i);
+			lstUtf[i] = getStringUtfChars(env, luaState, lstString[i]);
 		}
 		result = luaL_checkoption(luaState, narg, defUtf, lstUtf);
 	JNLUA_CATCH
@@ -1494,10 +1556,13 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkoption (JNIEnv *en
 	if (lstUtf) {
 		for (i = 0; i < lstLength; i++) {
 			if (lstUtf[i]) {
-				(*env)->ReleaseStringUTFChars(env, (*env)->GetObjectArrayElement(env, lst, i), lstUtf[i]);
+				(*env)->ReleaseStringUTFChars(env, lstString[i], lstUtf[i]);
 			}
 		}
 		free((void *) lstUtf);
+	}
+	if (lstString) {
+		free((void *) lstString);
 	}
 	if (defUtf) {
 		(*env)->ReleaseStringUTFChars(env, def, defUtf);
@@ -1691,6 +1756,10 @@ JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM *vm, void *reserved) {
 	if (!(ioExceptionClass = referenceClass(env, "java/io/IOException"))) {
 		return JNLUA_JNIVERSION;
 	}
+	if (!(enumClass = referenceClass(env, "java/lang/Enum")) ||
+			!(nameId = (*env)->GetMethodID(env, enumClass, "name", "()Ljava/lang/String;"))) {
+		return JNLUA_JNIVERSION;
+	}
 
 	/* OK */
 	initialized = 1;
@@ -1754,6 +1823,9 @@ JNIEXPORT void JNICALL JNI_OnUnload (JavaVM *vm, void *reserved) {
 	}
 	if (ioExceptionClass) {
 		(*env)->DeleteGlobalRef(env, ioExceptionClass);
+	}
+	if (enumClass) {
+		(*env)->DeleteGlobalRef(env, enumClass);
 	}
 }
 

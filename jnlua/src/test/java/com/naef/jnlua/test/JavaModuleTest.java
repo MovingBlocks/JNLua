@@ -1,5 +1,5 @@
 /*
- * $Id: JavaModuleTest.java,v 1.1 2008/11/07 21:00:52 anaef Exp $
+ * $Id$
  * See LICENSE.txt for license terms.
  */
 

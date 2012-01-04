@@ -1,5 +1,5 @@
 /*
- * $Id: LuaState.java,v 1.2 2008/11/07 20:07:54 anaef Exp $
+ * $Id$
  * See LICENSE.txt for license terms.
  */
 
@@ -1717,11 +1717,7 @@ public class LuaState {
 	 */
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values) {
 		check();
-		String[] options = new String[values.length];
-		for (int i = 0; i < values.length; i++) {
-			options[i] = values[i].name();
-		}
-		return values[lua_checkoption(index, null, options)];
+		return lua_checkenum(index, null, values);
 	}
 
 	/**
@@ -1743,11 +1739,7 @@ public class LuaState {
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values,
 			T d) {
 		check();
-		String[] options = new String[values.length];
-		for (int i = 0; i < values.length; i++) {
-			options[i] = values[i].name();
-		}
-		return values[lua_checkoption(index, d.name(), options)];
+		return lua_checkenum(index, d, values);
 	}
 
 	/**
@@ -2213,6 +2205,8 @@ public class LuaState {
 	private native void lua_tablemove(int index, int from, int to, int count);
 
 	private native void lua_argcheck(boolean cond, int narg, String extraMsg);
+
+	private native <T> T lua_checkenum(int narg, T def, T[] lst);
 
 	private native int lua_checkinteger(int narg);
 

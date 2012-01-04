@@ -1,5 +1,5 @@
 /*
- * $Id: LuaStateErrorTest.java,v 1.1 2008/10/28 16:36:48 anaef Exp $
+ * $Id$
  * See LICENSE.txt for license terms.
  */
 

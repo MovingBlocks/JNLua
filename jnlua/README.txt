@@ -58,11 +58,23 @@ luaL_requiref, no longer specifically supporting dots in module names. An
 optional boolean argument now controls whether a global variable with the
 module name is created.
 
-- Changed the argument checking methods in Lua state to call the Lua standard
+- Changed the argument checking methods in LuaState to call the Lua standard
 implementations, reducing the number of native transitions and taking advantage
 of tonumberx and tointegerx improvements. Also changed the checkOption
 methods to return an integer index instead of a string and added checkEnum
 methods suitable for use with Java enums.
+
+- Corrected an issue where the type method in LuaState would not return null for
+undefined stack indexes.
+
+- Corrected an issue where the default converter would not properly handle
+undefined stack indexes.
+
+- Corrected an issue where the setJavaReflector in LuaState allowed a null
+value to be set.
+
+- Corrected an issue where the openLibs method in LuaState would leave opened
+libraries on the stack.
 
 
 * Release 0.9.1 Beta (2010-04-05)
