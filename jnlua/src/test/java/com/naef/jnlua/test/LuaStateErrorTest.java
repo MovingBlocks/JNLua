@@ -970,7 +970,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	@Test(expected = NullPointerException.class)
 	public void testNullCheckEnum1() {
 		luaState.pushBoolean(false);
-		luaState.checkEnum(1, null);
+		luaState.checkEnum(1, (GcAction[]) null);
 	}
 
 	/**

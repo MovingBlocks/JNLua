@@ -52,7 +52,7 @@ public class LuaStackTraceElement {
 	 * the execution point, the method returns <code>null</code>.
 	 * 
 	 * @return the source name, or <code>null</code>
-	 * @see LuaState#load(java.io.InputStream, String)
+	 * @see LuaState#load(java.io.InputStream, String, String)
 	 * @see LuaState#load(String, String)
 	 */
 	public String getSourceName() {
