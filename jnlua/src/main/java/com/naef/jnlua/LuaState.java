@@ -940,6 +940,7 @@ public class LuaState {
 	 * @param operator
 	 *            the operator
 	 * @return the result of the comparison
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized boolean compare(int index1, int index2,
 			RelOperator operator) {
@@ -1017,6 +1018,7 @@ public class LuaState {
 	 * @param index
 	 *            the stack index
 	 * @return the length
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized int rawLen(int index) {
 		check();
@@ -1214,6 +1216,7 @@ public class LuaState {
 	 * @param index
 	 *            the stack index
 	 * @return the absolute stack index
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized int absIndex(int index) {
 		check();
@@ -1226,6 +1229,7 @@ public class LuaState {
 	 * 
 	 * @param operator
 	 *            the operator to apply
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized void arith(ArithOperator operator) {
 		check();
@@ -1252,6 +1256,7 @@ public class LuaState {
 	 *            the index to copy from
 	 * @param toIndex
 	 *            the index to copy to
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized void copy(int fromIndex, int toIndex) {
 		check();
@@ -1275,6 +1280,7 @@ public class LuaState {
 	 * 
 	 * @param index
 	 *            the index for which to push the length
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized void len(int index) {
 		check();
@@ -1714,6 +1720,7 @@ public class LuaState {
 	 * @param values
 	 *            the enum values
 	 * @return the string value
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values) {
 		check();
@@ -1735,6 +1742,7 @@ public class LuaState {
 	 * @param d
 	 *            the default value
 	 * @return the string value, or the default value
+	 * @since JNLua 1.0.0
 	 */
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values,
 			T d) {
@@ -2244,6 +2252,8 @@ public class LuaState {
 
 		/**
 		 * The coroutine library.
+		 * 
+		 * @since JNLua 1.0.0
 		 */
 		COROUTINE,
 
@@ -2269,6 +2279,8 @@ public class LuaState {
 
 		/**
 		 * The bit library.
+		 * 
+		 * @since JNLua 1.0.0
 		 */
 		BIT32,
 
@@ -2347,22 +2359,30 @@ public class LuaState {
 		SETSTEPMUL,
 
 		/**
-		 * Set major increment.
+		 * Undocumented.
+		 * 
+		 * @since JNLua 1.0.0
 		 */
 		SETMAJORINC,
 
 		/**
 		 * Returns whether the collector is running (i.e. not stopped).
+		 * 
+		 * @since JNLua 1.0.0
 		 */
 		ISRUNNING,
 
 		/**
 		 * Changes the collector to the generational mode.
+		 * 
+		 * @since JNLua 1.0.0
 		 */
 		GEN,
 
 		/**
 		 * Changes the collector to the incremental mode.
+		 * 
+		 * @since JNLua 1.0.0
 		 */
 		INC
 	}
@@ -2370,6 +2390,8 @@ public class LuaState {
 	/**
 	 * Represents a Lua arithmetic operator. Please see the Lua Reference Manual
 	 * for an explanation of these operators.
+	 * 
+	 * @since JNLua 1.0.0
 	 */
 	public enum ArithOperator {
 		/**
@@ -2411,6 +2433,8 @@ public class LuaState {
 	/**
 	 * Represents a Lua relational operator. Please see the Lua Reference Manual
 	 * for an explanation of these operators.
+	 * 
+	 * @since JNLua 1.0.0
 	 */
 	public enum RelOperator {
 		/**

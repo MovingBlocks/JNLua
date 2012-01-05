@@ -12,6 +12,8 @@ package com.naef.jnlua;
  * This exception is thrown if an error occurs running a <code>__gc</code>
  * metamethod during garbage collection.
  * </p>
+ * 
+ * @since JNLua 1.0.0
  */
 public class LuaGcMetamethodException extends LuaException {
 	// -- Static

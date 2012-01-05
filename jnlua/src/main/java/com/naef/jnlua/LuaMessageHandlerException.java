@@ -12,6 +12,8 @@ package com.naef.jnlua;
  * This exception is thrown if an error occurs running the message handler of a
  * protected call.
  * </p>
+ * 
+ * @since JNLua 1.0.0
  */
 public class LuaMessageHandlerException extends LuaException {
 	// -- Static
