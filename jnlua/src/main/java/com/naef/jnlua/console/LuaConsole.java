@@ -85,9 +85,9 @@ public class LuaConsole {
 		luaState.openLibs();
 
 		// Set buffer mode
-		luaState.load("io.stdout:setvbuf(\"no\")", "setvbuf");
+		luaState.load("io.stdout:setvbuf(\"no\")", "=consoleInitStdout");
 		luaState.call(0, 0);
-		luaState.load("io.stderr:setvbuf(\"no\")", "setvbuf");
+		luaState.load("io.stderr:setvbuf(\"no\")", "=consoleInitStderr");
 		luaState.call(0, 0);
 	}
 

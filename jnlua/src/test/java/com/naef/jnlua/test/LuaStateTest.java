@@ -263,14 +263,14 @@ public class LuaStateTest extends AbstractLuaTest {
 		InputStream inputStream = new ByteArrayInputStream(
 				"a = {}".getBytes("UTF-8"));
 		// load(InputStream)
-		luaState.load(inputStream, "=testLoadAndDump", "t");
+		luaState.load(inputStream, "=testLoad", "t");
 		luaState.call(0, 0);
 		luaState.getGlobal("a");
 		assertEquals(LuaType.TABLE, luaState.type(-1));
 		luaState.pop(1);
 
 		// load(String)
-		luaState.load("b = 2", "test2");
+		luaState.load("b = 2", "=testLoad");
 		luaState.call(0, 0);
 		luaState.getGlobal("b");
 		assertEquals(LuaType.NUMBER, luaState.type(-1));
@@ -286,7 +286,7 @@ public class LuaStateTest extends AbstractLuaTest {
 	@Test
 	public void testDump() throws Exception {
 		// dump()
-		luaState.load("c = 3", "test3");
+		luaState.load("c = 3", "=testDump");
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		luaState.dump(out);
 		byte[] bytes = out.toByteArray();
@@ -308,7 +308,7 @@ public class LuaStateTest extends AbstractLuaTest {
 	@Test
 	public void testCall() throws Exception {
 		// call()
-		luaState.load("function add(a, b) return a + b end", "test");
+		luaState.load("function add(a, b) return a + b end", "=testCall");
 		luaState.call(0, 0);
 		luaState.getGlobal("add");
 		luaState.pushInteger(1);
@@ -1154,7 +1154,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals("java.lang.Object", luaState.typeName(8));
 		assertEquals("function", luaState.typeName(9));
 		assertEquals("function", luaState.typeName(10));
-		assertEquals("undefined", luaState.typeName(11));
+		assertEquals("none", luaState.typeName(11));
 
 		// Finish
 		luaState.pop(10);
@@ -1501,7 +1501,7 @@ public class LuaStateTest extends AbstractLuaTest {
 			}
 		});
 		luaState.load("yieldfunc(... + 1)\n" + "coroutine.yield(... + 2)\n"
-				+ "return ... + 3\n", "=threadtest");
+				+ "return ... + 3\n", "=testThread");
 		luaState.newThread();
 
 		// Start
@@ -1606,8 +1606,10 @@ public class LuaStateTest extends AbstractLuaTest {
 	@Test
 	public void testCheckJavaObject() {
 		luaState.pushInteger(1);
-		assertEquals(Integer.valueOf(1), luaState.checkJavaObject(1, Integer.class));
-		assertEquals(Integer.valueOf(2), luaState.checkJavaObject(2, Integer.class, Integer.valueOf(2)));
+		assertEquals(Integer.valueOf(1),
+				luaState.checkJavaObject(1, Integer.class));
+		assertEquals(Integer.valueOf(2),
+				luaState.checkJavaObject(2, Integer.class, Integer.valueOf(2)));
 
 		// Cleanup
 		luaState.pop(1);
@@ -1677,9 +1679,10 @@ public class LuaStateTest extends AbstractLuaTest {
 			luaState.pop(1);
 		}
 		System.gc();
-		
+
 		// getProxy(int, Class)
-		luaState.load("return { run = function () hasRun = true end }", "=testGetProxy");
+		luaState.load("return { run = function () hasRun = true end }",
+				"=testGetProxy");
 		luaState.call(0, 1);
 		Runnable runnable = luaState.getProxy(-1, Runnable.class);
 		Thread thread = new Thread(runnable);
@@ -1692,7 +1695,8 @@ public class LuaStateTest extends AbstractLuaTest {
 		// getProxy(int, Class[])
 		luaState.pushBoolean(false);
 		luaState.setGlobal("hasRun");
-		runnable = (Runnable) luaState.getProxy(-1, new Class<?>[] { Runnable.class });
+		runnable = (Runnable) luaState.getProxy(-1,
+				new Class<?>[] { Runnable.class });
 		thread = new Thread(runnable);
 		thread.start();
 		thread.join();
@@ -1779,7 +1783,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		object = new Object();
 		luaState.pushJavaObject(object); // 8
 		luaState.getGlobal("print"); // 9
-		luaState.load("function a() end", "test");
+		luaState.load("function a() end", "=makeStack");
 		luaState.call(0, 0);
 		luaState.getGlobal("a"); // 10
 	}

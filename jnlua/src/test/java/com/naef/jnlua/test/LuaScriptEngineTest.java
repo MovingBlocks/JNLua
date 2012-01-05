@@ -30,11 +30,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LuaScriptEngineTest {
-	// ---- State
+	// -- State
 	private ScriptEngineManager scriptEngineManager;
 	private ScriptEngine scriptEngine;
 
-	// ---- Setup
+	// -- Setup
 	/**
 	 * Performs setup.
 	 */
@@ -44,7 +44,7 @@ public class LuaScriptEngineTest {
 		scriptEngine = scriptEngineManager.getEngineByName("Lua");
 	}
 
-	// -- Unit tests
+	// -- Test cases
 	/**
 	 * Tests the acquisition of the Lua script engine from the manager.
 	 */

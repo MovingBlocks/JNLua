@@ -59,10 +59,6 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 		// Configuration
 		context.setBindings(createBindings(), ScriptContext.ENGINE_SCOPE);
 		luaState.openLibs();
-		luaState.load("io.stdout:setvbuf(\"no\")", "setvbuf");
-		luaState.call(0, 0);
-		luaState.load("io.stderr:setvbuf(\"no\")", "setvbuf");
-		luaState.call(0, 0);
 	}
 
 	// -- ScriptEngine methods

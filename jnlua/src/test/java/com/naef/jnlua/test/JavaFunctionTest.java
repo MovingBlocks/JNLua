@@ -16,12 +16,12 @@ import com.naef.jnlua.LuaState;
  * Contains unit tests for Java functions.
  */
 public class JavaFunctionTest extends AbstractLuaTest {
-	// ---- Test cases
+	// -- Test cases
 	/**
 	 * Tests the call of a Lua function implemented in Java.
 	 */
 	@Test
-	public void testLuaFunction() throws Exception {
+	public void testJavaFunction() throws Exception {
 		// Push function
 		luaState.pushJavaFunction(new Add());
 

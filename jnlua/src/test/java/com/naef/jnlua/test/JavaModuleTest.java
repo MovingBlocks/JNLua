@@ -21,6 +21,9 @@ import com.naef.jnlua.JavaModule;
  */
 public class JavaModuleTest extends AbstractLuaTest {
 	// ---- Test cases
+	/**
+	 * Tests the toTable method.
+	 */
 	@Test
 	public void testToTable() {
 		// Map
@@ -38,5 +41,13 @@ public class JavaModuleTest extends AbstractLuaTest {
 		luaState.load("list[1] = 1", "=testToList");
 		luaState.call(0, 0);
 		assertEquals(Double.valueOf(1.0), list.get(0));
+	}
+	
+	/**
+	 * Tests the Java module from Lua.
+	 */
+	@Test
+	public void testJavaModule() throws Exception {
+		runTest("com/naef/jnlua/test/JavaModule.lua", "JavaModule");
 	}
 }

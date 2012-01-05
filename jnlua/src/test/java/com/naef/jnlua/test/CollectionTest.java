@@ -22,7 +22,7 @@ import org.junit.Test;
  * Contains unit tests for collections backed by Lua tables.
  */
 public class CollectionTest extends AbstractLuaTest {
-	// ---- Test cases
+	// -- Test cases
 	/**
 	 * Tests the map.
 	 */

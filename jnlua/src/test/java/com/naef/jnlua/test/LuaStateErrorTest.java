@@ -20,6 +20,7 @@ import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.LuaState.ArithOperator;
 import com.naef.jnlua.LuaState.GcAction;
+import com.naef.jnlua.LuaState.Library;
 import com.naef.jnlua.LuaState.RelOperator;
 import com.naef.jnlua.LuaValueProxy;
 import com.naef.jnlua.NamedJavaFunction;
@@ -149,7 +150,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullStringLoad() throws Exception {
-		luaState.load((String) null, "");
+		luaState.load((String) null, "=testNullStringLoad");
 	}
 
 	/**
@@ -178,7 +179,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullDump() throws Exception {
-		luaState.load("return 0", "nullDump");
+		luaState.load("return 0", "=testNullDump");
 		luaState.dump(null);
 	}
 
@@ -187,7 +188,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = IOException.class)
 	public void testIoExceptionDump() throws Exception {
-		luaState.load("return 0", "ioExceptionDump");
+		luaState.load("return 0", "=testIoExceptionDump");
 		luaState.dump(new OutputStream() {
 			@Override
 			public void write(int b) throws IOException {
@@ -832,7 +833,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 * yield(int) with no running thread.
 	 */
 	@Test(expected = LuaRuntimeException.class)
-	public void testIllegalYield() {
+	public void testIllegalYield1() {
 		luaState.register(new NamedJavaFunction() {
 			@Override
 			public int invoke(LuaState luaState) {
@@ -844,8 +845,28 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 				return "yieldfunc";
 			}
 		});
-		luaState.load("return yieldfunc()", "=yieldnothread");
+		luaState.load("return yieldfunc()", "=testIllegalYield1");
 		luaState.call(0, 0);
+	}
+
+	/**
+	 * yield across call boundary.
+	 */
+	@Test(expected=LuaRuntimeException.class)
+	public void testIllegalYield2() {
+		luaState.openLib(Library.COROUTINE);
+		luaState.pop(1);
+		JavaFunction yieldFunction = new JavaFunction() {
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.load("return coroutine.yield()", "=testIllegalYield2");
+				luaState.call(0, 0);
+				return 0;
+			}
+		};
+		luaState.pushJavaFunction(yieldFunction);
+		luaState.newThread();
+		luaState.resume(1, 0);
 	}
 
 	/**
@@ -864,7 +885,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 				return "yieldfunc";
 			}
 		});
-		luaState.load("yieldfunc()", "=yieldnoarguments");
+		luaState.load("yieldfunc()", "=testUnderflowYield");
 		luaState.newThread();
 		luaState.resume(1, 0);
 	}
