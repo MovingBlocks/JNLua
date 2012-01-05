@@ -73,9 +73,6 @@ undefined stack indexes.
 - Corrected an issue where the setJavaReflector in LuaState allowed a null
 value to be set.
 
-- Corrected an issue where the openLibs method in LuaState would leave opened
-libraries on the stack.
-
 
 * Release 0.9.1 Beta (2010-04-05)
 
