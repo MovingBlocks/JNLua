@@ -1,8 +1,8 @@
 # Paths
-JDK_DIR=/opt/jdk/jdk1.6.0_19
-LUA_LIB_DIR=/usr/lib
-LUA_INC_DIR=/usr/include/lua5.1
-VERSION=5.1
+JDK_DIR=/opt/jdk/jdk1.6.0_18
+LUA_LIB_DIR=/opt/lua52
+LUA_INC_DIR=/opt/lua52/include
+VERSION=52
 
 # Tools
 CC=gcc

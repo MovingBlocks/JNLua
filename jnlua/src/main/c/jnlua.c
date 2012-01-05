@@ -63,12 +63,6 @@ typedef struct StreamStruct  {
 	jboolean isCopy;
 } Stream;
 
-/* Strucutre for holding a jstring and its UTF chars. */
-typedef struct StringStruct {
-	jstring *string;
-	const char *utf;
-} String;
-
 /* ---- JNI helpers ---- */
 static jclass referenceClass (JNIEnv *env, const char *className);
 static jobject newGlobalRef (JNIEnv *env, lua_State *luaState, jobject obj, int type);
@@ -1466,7 +1460,7 @@ JNIEXPORT jobject JNICALL Java_com_naef_jnlua_LuaState_lua_1checkenum (JNIEnv *e
 		}
 		checknotnull(env, luaState, lst);
 		lstLength = (*env)->GetArrayLength(env, lst);
-		lstString = (jstring *) calloc(lstLength + 1, sizeof(String));
+		lstString = (jstring *) calloc(lstLength + 1, sizeof(jstring));
 		lstUtf = (const char **) calloc(lstLength + 1, sizeof(const char *));
 		check(env, luaState, lstString != NULL && lstUtf != NULL, luaMemoryAllocationExceptionClass, "JNI error: calloc() failed");
 		for (i = 0; i < lstLength; i++) {
@@ -1542,7 +1536,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1checkoption (JNIEnv *en
 		}
 		checknotnull(env, luaState, lst);
 		lstLength = (*env)->GetArrayLength(env, lst);
-		lstString = (jstring *) calloc(lstLength + 1, sizeof(String));
+		lstString = (jstring *) calloc(lstLength + 1, sizeof(jstring));
 		lstUtf = (const char **) calloc(lstLength + 1, sizeof(const char *));
 		check(env, luaState, lstString != NULL && lstUtf != NULL, luaMemoryAllocationExceptionClass, "JNI error: calloc() failed");
 		for (i = 0; i < lstLength; i++) {
