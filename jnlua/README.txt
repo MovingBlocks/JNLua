@@ -1,6 +1,6 @@
 HISTORY for JNLua
 
-* Release 1.0.0
+* Release 1.0.0 (2012-01-05)
 
 - Adapted to Lua 5.2.
 
@@ -47,10 +47,8 @@ method to accept undefined stack indexes.
 additional mode argument. Also, the source (aka chunkname) argument is
 no longer auto-prefixed with an equals sign.
 
-- Made the behavior of library open methods more consistent. The openLib method
-of LuaState is now properly documented to leave the opened library on the
-stack; the openLibs method of LuaState now removes libraries that are pushed
-onto the stack; the open method of JavaModule now leaves the Java module on
+- Changed the behavior of the library opening methods. The openLib method
+in LuaState and the open method in JavaModule now leave the loaded module on
 the stack.
 
 - Changed the behavior of the register method in LuaState to follow that of
@@ -70,8 +68,8 @@ undefined stack indexes.
 - Corrected an issue where the default converter would not properly handle
 undefined stack indexes.
 
-- Corrected an issue where the setJavaReflector in LuaState allowed a null
-value to be set.
+- Corrected an issue where the setJavaReflector method in LuaState allowed a
+null value to be set.
 
 
 * Release 0.9.1 Beta (2010-04-05)
