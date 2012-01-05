@@ -45,8 +45,8 @@ import com.naef.jnlua.JavaReflector.Metamethod;
  * </tr>
  * <tr>
  * <td>{@link java.lang.IllegalArgumentException}</td>
- * <td>if a stack index refers to an undefined stack location and the API does
- * not explicitly specify that the stack index may be undefined</td>
+ * <td>if a stack index refers to a non-valid stack location and the API does
+ * not explicitly specify that the stack index may be non-valid</td>
  * </tr>
  * <tr>
  * <td>{@link java.lang.IllegalArgumentException}</td>
@@ -96,6 +96,7 @@ public class LuaState {
 
 	/**
 	 * OK status.
+	 * 
 	 * @since JNLua 1.0.0
 	 */
 	public static final int OK = 0;
@@ -107,12 +108,14 @@ public class LuaState {
 
 	/**
 	 * Registry index of the main thread.
+	 * 
 	 * @since JNLua 1.0.0
 	 */
 	public static final int RIDX_MAINTHREAD = 1;
 
 	/**
 	 * Registry index of the global environment.
+	 * 
 	 * @since JNLua 1.0.0
 	 */
 	public static final int RIDX_GLOBALS = 2;
@@ -447,7 +450,7 @@ public class LuaState {
 		check();
 		String name = namedJavaFunction.getName();
 		if (name == null) {
-			throw new IllegalArgumentException("Anonymous function");
+			throw new IllegalArgumentException("anonymous function");
 		}
 		pushJavaFunction(namedJavaFunction);
 		setGlobal(name);
@@ -704,7 +707,7 @@ public class LuaState {
 	 * Returns whether the value at the specified stack index is a boolean.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -720,7 +723,7 @@ public class LuaState {
 	 * Returns whether the value at the specified stack index is a C function.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -737,7 +740,7 @@ public class LuaState {
 	 * (either a C function, a Java function or a Lua function.)
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -754,7 +757,7 @@ public class LuaState {
 	 * function.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -772,7 +775,7 @@ public class LuaState {
 	 * configured converter.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -793,11 +796,11 @@ public class LuaState {
 	 * <p>
 	 * Note that the method does not perform conversion. If you want to check if
 	 * a value <i>is convertible to</i> a Java object, then invoke <code>
-	 * isJavaObject(index, Object.class)</code> .
+	 * isJavaObject(index, Object.class)</code>.
 	 * </p>
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -815,7 +818,7 @@ public class LuaState {
 	 * <code>nil</code>.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -828,15 +831,15 @@ public class LuaState {
 	}
 
 	/**
-	 * Returns whether the value at the specified stack index is undefined.
+	 * Returns whether the specified stack index is non-valid.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
 	 *            the stack index
-	 * @return whether the value is undefined
+	 * @return whether the stack index is non-valid
 	 */
 	public synchronized boolean isNone(int index) {
 		check();
@@ -844,16 +847,17 @@ public class LuaState {
 	}
 
 	/**
-	 * Returns whether the value at the specified stack index is undefined or
+	 * Returns whether the specified stack index is non-valid or its value is
 	 * <code>nil</code>.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
 	 *            the stack index
-	 * @return whether the value is undefined
+	 * @return whether the stack index is non-valid or its value is
+	 *         <code>nil</code>
 	 */
 	public synchronized boolean isNoneOrNil(int index) {
 		check();
@@ -865,7 +869,7 @@ public class LuaState {
 	 * string convertible to a number.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -882,7 +886,7 @@ public class LuaState {
 	 * number (which is always convertible to a string.)
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -898,7 +902,7 @@ public class LuaState {
 	 * Returns whether the value at the specified stack index is a table.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -914,7 +918,7 @@ public class LuaState {
 	 * Returns whether the value at the specified stack index is a thread.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
@@ -932,7 +936,7 @@ public class LuaState {
 	 * operator according to Lua semantics.
 	 * 
 	 * <p>
-	 * The stack index may be undefined in case the <code>EQ</code> operator is
+	 * The stack index may be non-valid in case the <code>EQ</code> operator is
 	 * specified.
 	 * </p>
 	 * 
@@ -967,10 +971,8 @@ public class LuaState {
 	}
 
 	/**
-	 * Returns the length of the value at the specified stack index. The
-	 * definition of the length depends on the type of the value. For strings,
-	 * it is the length of the string, for tables it is the result of the length
-	 * operator. For other types, the return value is undefined.
+	 * Returns the length of the value at the specified stack index. Please see
+	 * the Lua Reference Manual for the definition of the raw length of a value.
 	 * 
 	 * @param index
 	 *            the stack index
@@ -1032,7 +1034,7 @@ public class LuaState {
 	 * Returns the boolean representation of the value at the specified stack
 	 * index. The boolean representation is <code>true</code> for all values
 	 * except <code>false</code> and <code>nil</code>. The method also returns
-	 * <code>false</code> if the index is undefined.
+	 * <code>false</code> if the index is non-valid.
 	 * 
 	 * @param index
 	 *            the stack index
@@ -1160,12 +1162,12 @@ public class LuaState {
 	 * Returns the type of the value at the specified stack index.
 	 * 
 	 * <p>
-	 * The stack index may be undefined.
+	 * The stack index may be non-valid.
 	 * </p>
 	 * 
 	 * @param index
 	 *            the stack index
-	 * @return the type, or <code>null</code> if the stack index is undefined
+	 * @return the type, or <code>null</code> if the stack index is non-valid
 	 */
 	public synchronized LuaType type(int index) {
 		check();
@@ -1179,8 +1181,8 @@ public class LuaState {
 	 * type name is the canonical class name.
 	 * 
 	 * <p>
-	 * The stack index may be undefined in which case the method returns the
-	 * string <code>"undefined"</code>.
+	 * The stack index may be non-valid in which case the method returns the
+	 * string <code>"none"</code>.
 	 * </p>
 	 * 
 	 * @param index
@@ -1193,7 +1195,7 @@ public class LuaState {
 		check();
 		LuaType type = type(index);
 		if (type == null) {
-			return "undefined";
+			return "none";
 		}
 		switch (type) {
 		case USERDATA:
@@ -1733,8 +1735,8 @@ public class LuaState {
 	/**
 	 * Checks if the value of the specified function argument is a string or a
 	 * number matching one of the specified enum values. If so, the argument
-	 * value is returned as an enum value. If the value of the specified
-	 * argument is undefined or <code>nil</code>, the method returns the
+	 * value is returned as an enum value. If the specified stack index is
+	 * non-valid or if its value is <code>nil</code>, the method returns the
 	 * specified default value. Otherwise, the method throws a Lua runtime
 	 * exception with a descriptive error message.
 	 * 
@@ -1771,7 +1773,7 @@ public class LuaState {
 	/**
 	 * Checks if the value of the specified function argument is a number or a
 	 * string convertible to a number. If so, the argument value is returned as
-	 * an integer. If the value of the specified argument is undefined or
+	 * an integer. If the specified stack index is non-valid or if its value is
 	 * <code>nil</code>, the method returns the specified default value.
 	 * Otherwise, the method throws a Lua runtime exception with a descriptive
 	 * error message.
@@ -1820,10 +1822,10 @@ public class LuaState {
 	/**
 	 * Checks if the value of the specified function argument is convertible to
 	 * a Java object of the specified type. If so, the argument value is
-	 * returned as a Java object of the specified type. If the value of the
-	 * specified argument is undefined or <code>nil</code>, the method returns
-	 * the specified default value. Otherwise, the method throws a Lua runtime
-	 * exception with a descriptive error message.
+	 * returned as a Java object of the specified type. If the specified stack
+	 * index is non-valid or if its value is <code>nil</code>, the method
+	 * returns the specified default value. Otherwise, the method throws a Lua
+	 * runtime exception with a descriptive error message.
 	 * 
 	 * @param index
 	 *            the argument index
@@ -1859,7 +1861,7 @@ public class LuaState {
 	/**
 	 * Checks if the value of the specified function argument is a number or a
 	 * string convertible to a number. If so, the argument value is returned as
-	 * a number. If the value of the specified argument is undefined or
+	 * a number. If the specified stack index is non-valid or if its value is
 	 * <code>nil</code>, the method returns the specified default value.
 	 * Otherwise, the method throws a Lua runtime exception with a descriptive
 	 * error message.
@@ -1895,10 +1897,10 @@ public class LuaState {
 	/**
 	 * Checks if the value of the specified function argument is a string or a
 	 * number matching one of the specified options. If so, argument value is
-	 * returned as a string. If the value of the specified argument is undefined
-	 * or <code>nil</code>, the method returns the specified default value.
-	 * Otherwise, the method throws a Lua runtime exception with a descriptive
-	 * error message.
+	 * returned as a string. If the specified stack index is non-valid or if its
+	 * value is <code>nil</code>, the method returns the specified default
+	 * value. Otherwise, the method throws a Lua runtime exception with a
+	 * descriptive error message.
 	 * 
 	 * @param index
 	 *            the argument index
@@ -1929,10 +1931,10 @@ public class LuaState {
 
 	/**
 	 * Checks if the value of the specified function argument is a string or a
-	 * number. If so, the argument value is returned as a string. If the value
-	 * of the specified argument is undefined or <code>nil</code>, the method
-	 * returns the specified default value. Otherwise, the method throws a Lua
-	 * runtime exception with a descriptive error message.
+	 * number. If so, the argument value is returned as a string. If the
+	 * specified stack index is non-valid or if its value is <code>nil</code>,
+	 * the method returns the specified default value. Otherwise, the method
+	 * throws a Lua runtime exception with a descriptive error message.
 	 * 
 	 * @param index
 	 *            the argument index
