@@ -66,10 +66,10 @@ methods suitable for use with Java enums.
 undefined stack indexes.
 
 - Corrected an issue where the default converter would not properly handle
-undefined stack indexes.
+non-valid stack indexes.
 
-- Corrected an issue where the setJavaReflector method in LuaState allowed a
-null value to be set.
+- Corrected an issue where the setJavaReflector method in LuaState would allow
+a null value to be set.
 
 
 * Release 0.9.1 Beta (2010-04-05)
