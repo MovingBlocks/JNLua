@@ -96,6 +96,7 @@ public class LuaState {
 
 	/**
 	 * OK status.
+	 * @since JNLua 1.0.0
 	 */
 	public static final int OK = 0;
 
@@ -106,11 +107,13 @@ public class LuaState {
 
 	/**
 	 * Registry index of the main thread.
+	 * @since JNLua 1.0.0
 	 */
 	public static final int RIDX_MAINTHREAD = 1;
 
 	/**
 	 * Registry index of the global environment.
+	 * @since JNLua 1.0.0
 	 */
 	public static final int RIDX_GLOBALS = 2;
 
@@ -2278,7 +2281,7 @@ public class LuaState {
 		STRING,
 
 		/**
-		 * The bit library.
+		 * The bit32 library.
 		 * 
 		 * @since JNLua 1.0.0
 		 */
