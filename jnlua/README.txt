@@ -1,5 +1,13 @@
 HISTORY for JNLua
 
+* Release 1.0.1
+
+- Javadoc corrections.
+
+- Corrected an issue where the native library would pass an invalid handle to
+the ReleaseStringUTFChars function.
+
+
 * Release 1.0.0 (2012-01-05)
 
 - Adapted to Lua 5.2.
@@ -39,7 +47,7 @@ RIDX_GLOBALS) to push the global environment onto the stack.
 
 - Removed the checkBoolean methods from LuaState. You can use the toBoolean
 method to evaluate any value in a boolean context. Also changed the toBoolean
-method to accept undefined stack indexes.
+method to accept non-valid stack indexes.
 
 - Removed the setFEnv and getFEnv methods from LuaState.
 
@@ -62,8 +70,8 @@ of tonumberx and tointegerx improvements. Also changed the checkOption
 methods to return an integer index instead of a string and added checkEnum
 methods suitable for use with Java enums.
 
-- Corrected an issue where the type method in LuaState would not return null for
-undefined stack indexes.
+- Corrected an issue where the type method in LuaState would not return null
+for non-valid stack indexes.
 
 - Corrected an issue where the default converter would not properly handle
 non-valid stack indexes.

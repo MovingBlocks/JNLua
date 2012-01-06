@@ -516,9 +516,6 @@ public class LuaState {
 	 */
 	public synchronized void load(InputStream inputStream, String chunkName,
 			String mode) throws IOException {
-		if (chunkName == null) {
-			throw new NullPointerException();
-		}
 		check();
 		lua_load(inputStream, chunkName, mode);
 	}
@@ -533,6 +530,7 @@ public class LuaState {
 	 *            the name of the chunk for use in error messages
 	 */
 	public synchronized void load(String chunk, String chunkName) {
+		check();
 		try {
 			load(new ByteArrayInputStream(chunk.getBytes("UTF-8")), chunkName,
 					"t");
@@ -1752,6 +1750,9 @@ public class LuaState {
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values,
 			T d) {
 		check();
+		if (d == null) {
+			throw new NullPointerException();
+		}
 		return lua_checkenum(index, d, values);
 	}
 
@@ -1813,7 +1814,7 @@ public class LuaState {
 			checkArg(
 					index,
 					false,
-					String.format("exptected %s, got %s",
+					String.format("%s expected, got %s",
 							clazz.getCanonicalName(), typeName(index)));
 		}
 		return toJavaObject(index, clazz);
@@ -1879,15 +1880,15 @@ public class LuaState {
 
 	/**
 	 * Checks if the value of the specified function argument is a string or a
-	 * number matching one of the specified options. If so, the argument value
-	 * is returned as a string. Otherwise, the method throws a Lua runtime
-	 * exception with a descriptive error message.
+	 * number matching one of the specified options. If so, the index position
+	 * of the matched option is returned. Otherwise, the method throws a Lua
+	 * runtime exception with a descriptive error message.
 	 * 
 	 * @param index
 	 *            the argument index
 	 * @param options
 	 *            the options
-	 * @return the string value
+	 * @return the index position of the matched option
 	 */
 	public synchronized int checkOption(int index, String[] options) {
 		check();
@@ -1896,11 +1897,11 @@ public class LuaState {
 
 	/**
 	 * Checks if the value of the specified function argument is a string or a
-	 * number matching one of the specified options. If so, argument value is
-	 * returned as a string. If the specified stack index is non-valid or if its
-	 * value is <code>nil</code>, the method returns the specified default
-	 * value. Otherwise, the method throws a Lua runtime exception with a
-	 * descriptive error message.
+	 * number matching one of the specified options. If so, the index position
+	 * of the matched option is returned. If the specified stack index is
+	 * non-valid or if its value is <code>nil</code>, the method matches the
+	 * specified default value. If no match is found, the method throws a Lua
+	 * runtime exception with a descriptive error message.
 	 * 
 	 * @param index
 	 *            the argument index
@@ -1908,10 +1909,13 @@ public class LuaState {
 	 *            the options
 	 * @param d
 	 *            the default value
-	 * @return the string value, or the default value
+	 * @return the index position of the matched option
 	 */
 	public synchronized int checkOption(int index, String[] options, String d) {
 		check();
+		if (d == null) {
+			throw new NullPointerException();
+		}
 		return lua_checkoption(index, d, options);
 	}
 
@@ -1971,6 +1975,7 @@ public class LuaState {
 	 * @return the Lua value proxy
 	 */
 	public synchronized LuaValueProxy getProxy(int index) {
+		check();
 		pushValue(index);
 		return new LuaValueProxyImpl(ref(REGISTRYINDEX));
 	}
@@ -1990,6 +1995,7 @@ public class LuaState {
 	 */
 	@SuppressWarnings("unchecked")
 	public synchronized <T> T getProxy(int index, Class<T> interfaze) {
+		check();
 		return (T) getProxy(index, new Class<?>[] { interfaze });
 	}
 
@@ -2007,6 +2013,7 @@ public class LuaState {
 	 * @return the proxy object
 	 */
 	public synchronized LuaValueProxy getProxy(int index, Class<?>[] interfaces) {
+		check();
 		pushValue(index);
 		if (!isTable(index)) {
 			throw new IllegalArgumentException(String.format(

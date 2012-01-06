@@ -1483,7 +1483,7 @@ JNIEXPORT jobject JNICALL Java_com_naef_jnlua_LuaState_lua_1checkenum (JNIEnv *e
 		free((void *) lstString);
 	}
 	if (defUtf) {
-		(*env)->ReleaseStringUTFChars(env, def, defUtf);
+		(*env)->ReleaseStringUTFChars(env, defString, defUtf);
 	}
 	return result;
 }

@@ -6,7 +6,7 @@
 package com.naef.jnlua;
 
 /**
- * Indicates an Lua garbage collection metamethod error.
+ * Indicates a Lua garbage collection metamethod error.
  * 
  * <p>
  * This exception is thrown if an error occurs running a <code>__gc</code>

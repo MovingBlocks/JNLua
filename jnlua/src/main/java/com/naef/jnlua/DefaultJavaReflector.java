@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -49,6 +50,8 @@ public class DefaultJavaReflector implements JavaReflector {
 	private JavaFunction lessThan = new LessThan();
 	private JavaFunction lessThanOrEqual = new LessThanOrEqual();
 	private JavaFunction toString = new ToString();
+	private JavaFunction pairs = new Pairs();
+	private JavaFunction ipairs = new IPairs();
 	private JavaFunction javaFields = new AccessorPairs(FieldAccessor.class);
 	private JavaFunction javaMethods = new AccessorPairs(
 			InvocableAccessor.class);
@@ -91,9 +94,9 @@ public class DefaultJavaReflector implements JavaReflector {
 		case TOSTRING:
 			return toString;
 		case PAIRS:
-			return JavaModule.getInstance().pairs;
+			return pairs;
 		case IPAIRS:
-			return JavaModule.getInstance().ipairs;
+			return ipairs;
 		case JAVAFIELDS:
 			return javaFields;
 		case JAVAMETHODS:
@@ -162,8 +165,8 @@ public class DefaultJavaReflector implements JavaReflector {
 			// Find the method in an interface if the declaring class is not
 			// public
 			if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
-				method = getInterfaceMethod(clazz, method.getName(), method
-						.getParameterTypes());
+				method = getInterfaceMethod(clazz, method.getName(),
+						method.getParameterTypes());
 				if (method == null) {
 					continue;
 				}
@@ -230,8 +233,8 @@ public class DefaultJavaReflector implements JavaReflector {
 			if (method != null
 					&& !Modifier.isPublic(method.getDeclaringClass()
 							.getModifiers())) {
-				method = getInterfaceMethod(clazz, method.getName(), method
-						.getParameterTypes());
+				method = getInterfaceMethod(clazz, method.getName(),
+						method.getParameterTypes());
 				try {
 					propertyDescriptors[i].setReadMethod(method);
 				} catch (IntrospectionException e) {
@@ -241,8 +244,8 @@ public class DefaultJavaReflector implements JavaReflector {
 			if (method != null
 					&& !Modifier.isPublic(method.getDeclaringClass()
 							.getModifiers())) {
-				method = getInterfaceMethod(clazz, method.getName(), method
-						.getParameterTypes());
+				method = getInterfaceMethod(clazz, method.getName(),
+						method.getParameterTypes());
 				try {
 					propertyDescriptors[i].setWriteMethod(method);
 				} catch (IntrospectionException e) {
@@ -321,8 +324,8 @@ public class DefaultJavaReflector implements JavaReflector {
 			if (objectClass.isArray()) {
 				if (!luaState.isNumber(2)) {
 					throw new LuaRuntimeException(String.format(
-							"attempt to read array with %s accessor", luaState
-									.typeName(2)));
+							"attempt to read array with %s accessor",
+							luaState.typeName(2)));
 				}
 				int index = luaState.toInteger(2);
 				int length = Array.getLength(object);
@@ -347,10 +350,9 @@ public class DefaultJavaReflector implements JavaReflector {
 			Accessor accessor = objectAccessors.get(key);
 			if (accessor == null) {
 				throw new LuaRuntimeException(
-						String
-								.format(
-										"attempt to read class %s with accessor '%s' (undefined)",
-										objectClass.getCanonicalName(), key));
+						String.format(
+								"attempt to read class %s with accessor '%s' (undefined)",
+								objectClass.getCanonicalName(), key));
 			}
 			accessor.read(luaState, object);
 			return 1;
@@ -370,8 +372,8 @@ public class DefaultJavaReflector implements JavaReflector {
 			if (objectClass.isArray()) {
 				if (!luaState.isNumber(2)) {
 					throw new LuaRuntimeException(String.format(
-							"attempt to write array with %s accessor", luaState
-									.typeName(2)));
+							"attempt to write array with %s accessor",
+							luaState.typeName(2)));
 				}
 				int index = luaState.toInteger(2);
 				int length = Array.getLength(object);
@@ -383,11 +385,10 @@ public class DefaultJavaReflector implements JavaReflector {
 				Class<?> componentType = objectClass.getComponentType();
 				if (!luaState.isJavaObject(3, componentType)) {
 					throw new LuaRuntimeException(
-							String
-									.format(
-											"attempt to write array of %s at index %d with %s value",
-											componentType.getCanonicalName(),
-											luaState.typeName(3)));
+							String.format(
+									"attempt to write array of %s at index %d with %s value",
+									componentType.getCanonicalName(),
+									luaState.typeName(3)));
 				}
 				Object value = luaState.toJavaObject(3, componentType);
 				Array.set(object, index - 1, value);
@@ -406,10 +407,9 @@ public class DefaultJavaReflector implements JavaReflector {
 			Accessor accessor = objectAccessors.get(key);
 			if (accessor == null) {
 				throw new LuaRuntimeException(
-						String
-								.format(
-										"attempt to write class %s with accessor '%s' (undefined)",
-										objectClass.getCanonicalName(), key));
+						String.format(
+								"attempt to write class %s with accessor '%s' (undefined)",
+								objectClass.getCanonicalName(), key));
 			}
 			accessor.write(luaState, object);
 			return 0;
@@ -455,8 +455,8 @@ public class DefaultJavaReflector implements JavaReflector {
 		public int invoke(LuaState luaState) {
 			if (!luaState.isJavaObject(1, Comparable.class)) {
 				throw new LuaRuntimeException(String.format(
-						"class %s does not implement Comparable", luaState
-								.typeName(1)));
+						"class %s does not implement Comparable",
+						luaState.typeName(1)));
 			}
 			Comparable<Object> comparable = luaState.toJavaObject(1,
 					Comparable.class);
@@ -475,14 +475,189 @@ public class DefaultJavaReflector implements JavaReflector {
 		public int invoke(LuaState luaState) {
 			if (!luaState.isJavaObject(1, Comparable.class)) {
 				throw new LuaRuntimeException(String.format(
-						"class %s does not implement Comparable", luaState
-								.typeName(1)));
+						"class %s does not implement Comparable",
+						luaState.typeName(1)));
 			}
 			Comparable<Object> comparable = luaState.toJavaObject(1,
 					Comparable.class);
 			Object object = luaState.toJavaObject(2, Object.class);
 			luaState.pushBoolean(comparable.compareTo(object) <= 0);
 			return 1;
+		}
+	}
+
+	/**
+	 * <code>__tostring</code> metamethod implementation.
+	 */
+	private class ToString implements JavaFunction {
+		@Override
+		public int invoke(LuaState luaState) {
+			Object object = luaState.toJavaObject(1, Object.class);
+			luaState.pushString(object != null ? object.toString() : "null");
+			return 1;
+		}
+	}
+
+	/**
+	 * Provides an iterator for maps. For <code>NavigableMap</code> objects, the
+	 * function returns a stateless iterator which allows concurrent
+	 * modifications to the map. For other maps, the function returns an
+	 * iterator based on <code>Iterator</code> which does not support concurrent
+	 * modifications.
+	 */
+	private static class Pairs implements NamedJavaFunction {
+		// -- Static
+		private final JavaFunction navigableMapNext = new NavigableMapNext();
+
+		// -- JavaFunction methods
+		@SuppressWarnings("unchecked")
+		@Override
+		public int invoke(LuaState luaState) {
+			Map<Object, Object> map = luaState.checkJavaObject(1, Map.class);
+			luaState.checkArg(1, map != null,
+					String.format("expected map, got %s", luaState.typeName(1)));
+			if (map instanceof NavigableMap) {
+				luaState.pushJavaFunction(navigableMapNext);
+			} else {
+				luaState.pushJavaFunction(new MapNext(map.entrySet().iterator()));
+			}
+			luaState.pushJavaObject(map);
+			luaState.pushNil();
+			return 3;
+		}
+
+		@Override
+		public String getName() {
+			return "pairs";
+		}
+
+		/**
+		 * Provides a stateful iterator function for maps.
+		 */
+		private static class MapNext implements JavaFunction {
+			// -- State
+			private Iterator<Map.Entry<Object, Object>> iterator;
+
+			// -- Construction
+			/**
+			 * Creates a new instance.
+			 */
+			public MapNext(Iterator<Map.Entry<Object, Object>> iterator) {
+				this.iterator = iterator;
+			}
+
+			// -- JavaFunction methods
+			public int invoke(LuaState luaState) {
+				if (iterator.hasNext()) {
+					Map.Entry<Object, Object> entry = iterator.next();
+					luaState.pushJavaObject(entry.getKey());
+					luaState.pushJavaObject(entry.getValue());
+					return 2;
+				} else {
+					luaState.pushNil();
+					return 1;
+				}
+			}
+		}
+
+		/**
+		 * Provides a stateless iterator function for navigable maps.
+		 */
+		private static class NavigableMapNext implements JavaFunction {
+			// -- JavaFunction methods
+			@SuppressWarnings("unchecked")
+			public int invoke(LuaState luaState) {
+				NavigableMap<Object, Object> navigableMap = luaState
+						.checkJavaObject(1, NavigableMap.class);
+				Object key = luaState.checkJavaObject(2, Object.class);
+				Map.Entry<Object, Object> entry;
+				if (key != null) {
+					entry = navigableMap.higherEntry(key);
+				} else {
+					entry = navigableMap.firstEntry();
+				}
+				if (entry != null) {
+					luaState.pushJavaObject(entry.getKey());
+					luaState.pushJavaObject(entry.getValue());
+					return 2;
+				} else {
+					luaState.pushNil();
+					return 1;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Provides an iterator for lists and arrays.
+	 */
+	private static class IPairs implements NamedJavaFunction {
+		// -- Static
+		private final JavaFunction listNext = new ListNext();
+		private final JavaFunction arrayNext = new ArrayNext();
+
+		// -- JavaFunction methods
+		@Override
+		public int invoke(LuaState luaState) {
+			Object object;
+			if (luaState.isJavaObject(1, List.class)) {
+				object = luaState.toJavaObject(1, List.class);
+				luaState.pushJavaFunction(listNext);
+			} else {
+				object = luaState.checkJavaObject(1, Object.class);
+				luaState.checkArg(1, object.getClass().isArray(), String
+						.format("expected list or array, got %s",
+								luaState.typeName(1)));
+				luaState.pushJavaFunction(arrayNext);
+			}
+			luaState.pushJavaObject(object);
+			luaState.pushInteger(0);
+			return 3;
+		}
+
+		@Override
+		public String getName() {
+			return "ipairs";
+		}
+
+		/**
+		 * Provides a stateless iterator function for lists.
+		 */
+		private static class ListNext implements JavaFunction {
+			public int invoke(LuaState luaState) {
+				List<?> list = luaState.checkJavaObject(1, List.class);
+				int size = list.size();
+				int index = luaState.checkInteger(2);
+				index++;
+				if (index >= 1 && index <= size) {
+					luaState.pushInteger(index);
+					luaState.pushJavaObject(list.get(index - 1));
+					return 2;
+				} else {
+					luaState.pushNil();
+					return 1;
+				}
+			}
+		}
+
+		/**
+		 * Provides a stateless iterator function for arrays.
+		 */
+		private static class ArrayNext implements JavaFunction {
+			public int invoke(LuaState luaState) {
+				Object array = luaState.checkJavaObject(1, Object.class);
+				int length = java.lang.reflect.Array.getLength(array);
+				int index = luaState.checkInteger(2);
+				index++;
+				if (index >= 1 && index <= length) {
+					luaState.pushInteger(index);
+					luaState.pushJavaObject(Array.get(array, index - 1));
+					return 2;
+				} else {
+					luaState.pushNil();
+					return 1;
+				}
+			}
 		}
 	}
 
@@ -571,18 +746,6 @@ public class DefaultJavaReflector implements JavaReflector {
 				// End iteration
 				return 0;
 			}
-		}
-	}
-
-	/**
-	 * <code>__tostring</code> metamethod implementation.
-	 */
-	private class ToString implements JavaFunction {
-		@Override
-		public int invoke(LuaState luaState) {
-			Object object = luaState.toJavaObject(1, Object.class);
-			luaState.pushString(object != null ? object.toString() : "null");
-			return 1;
 		}
 	}
 
@@ -747,8 +910,9 @@ public class DefaultJavaReflector implements JavaReflector {
 			Object object = luaState.checkJavaObject(1, Object.class);
 			Class<?> objectClass = getObjectClass(object);
 			luaState.checkArg(1, clazz.isAssignableFrom(objectClass), String
-					.format("class %s is not a subclass of %s", objectClass
-							.getCanonicalName(), clazz.getCanonicalName()));
+					.format("class %s is not a subclass of %s",
+							objectClass.getCanonicalName(),
+							clazz.getCanonicalName()));
 			if (objectClass == object) {
 				object = null;
 			}
@@ -782,21 +946,23 @@ public class DefaultJavaReflector implements JavaReflector {
 			Object[] arguments = new Object[parameterCount];
 			if (invocable.isVarArgs()) {
 				for (int i = 0; i < parameterCount - 1; i++) {
-					arguments[i] = luaState.toJavaObject(i + 2, invocable
-							.getParameterType(i));
+					arguments[i] = luaState.toJavaObject(i + 2,
+							invocable.getParameterType(i));
 				}
-				arguments[parameterCount - 1] = Array.newInstance(invocable
-						.getParameterType(parameterCount - 1), argCount
-						- (parameterCount - 1));
+				arguments[parameterCount - 1] = Array.newInstance(
+						invocable.getParameterType(parameterCount - 1),
+						argCount - (parameterCount - 1));
 				for (int i = parameterCount - 1; i < argCount; i++) {
-					Array.set(arguments[parameterCount - 1], i
-							- (parameterCount - 1), luaState.toJavaObject(
-							i + 2, invocable.getParameterType(i)));
+					Array.set(
+							arguments[parameterCount - 1],
+							i - (parameterCount - 1),
+							luaState.toJavaObject(i + 2,
+									invocable.getParameterType(i)));
 				}
 			} else {
 				for (int i = 0; i < parameterCount; i++) {
-					arguments[i] = luaState.toJavaObject(i + 2, invocable
-							.getParameterType(i));
+					arguments[i] = luaState.toJavaObject(i + 2,
+							invocable.getParameterType(i));
 				}
 			}
 
@@ -927,8 +1093,10 @@ public class DefaultJavaReflector implements JavaReflector {
 					if (other == invocable) {
 						continue;
 					}
-					int parameterCount = Math.min(argCount, Math.max(invocable
-							.getParameterCount(), other.getParameterCount()));
+					int parameterCount = Math.min(
+							argCount,
+							Math.max(invocable.getParameterCount(),
+									other.getParameterCount()));
 					boolean delta = false;
 					for (int j = 0; j < parameterCount; j++) {
 						int distance = converter.getTypeDistance(luaState,
@@ -961,8 +1129,10 @@ public class DefaultJavaReflector implements JavaReflector {
 					if (other == invocable) {
 						continue;
 					}
-					int parameterCount = Math.min(argCount, Math.max(invocable
-							.getParameterCount(), other.getParameterCount()));
+					int parameterCount = Math.min(
+							argCount,
+							Math.max(invocable.getParameterCount(),
+									other.getParameterCount()));
 					boolean delta = false;
 					for (int j = 0; j < parameterCount; j++) {
 						Class<?> type = invocable.getParameterType(j);
@@ -1004,8 +1174,8 @@ public class DefaultJavaReflector implements JavaReflector {
 		private LuaRuntimeException getSignatureMismatchException(
 				LuaState luaState) {
 			return new LuaRuntimeException(String.format(
-					"no %s of class %s matches '%s(%s)'", getWhat(), clazz
-							.getCanonicalName(), getName(),
+					"no %s of class %s matches '%s(%s)'", getWhat(),
+					clazz.getCanonicalName(), getName(),
 					getLuaSignatureString(luaState)));
 		}
 
@@ -1018,8 +1188,8 @@ public class DefaultJavaReflector implements JavaReflector {
 			StringBuffer sb = new StringBuffer();
 			sb.append(String.format(
 					"%s '%s(%s)' on class %s is ambivalent among ", getWhat(),
-					getName(), getLuaSignatureString(luaState), clazz
-							.getCanonicalName()));
+					getName(), getLuaSignatureString(luaState),
+					clazz.getCanonicalName()));
 			boolean first = true;
 			for (Invocable invocable : candidates) {
 				if (first) {
@@ -1086,11 +1256,10 @@ public class DefaultJavaReflector implements JavaReflector {
 		public void read(LuaState luaState, Object object) {
 			if (propertyDescriptor.getReadMethod() == null) {
 				throw new LuaRuntimeException(
-						String
-								.format(
-										"attempt to read class %s with accessor '%s' (a write-only property)",
-										clazz.getCanonicalName(),
-										propertyDescriptor.getName()));
+						String.format(
+								"attempt to read class %s with accessor '%s' (a write-only property)",
+								clazz.getCanonicalName(),
+								propertyDescriptor.getName()));
 			}
 			try {
 				luaState.pushJavaObject(propertyDescriptor.getReadMethod()
@@ -1108,15 +1277,14 @@ public class DefaultJavaReflector implements JavaReflector {
 		public void write(LuaState luaState, Object object) {
 			if (propertyDescriptor.getWriteMethod() == null) {
 				throw new LuaRuntimeException(
-						String
-								.format(
-										"attempt to write class %s with acessor '%s' (a read-only property)",
-										clazz.getCanonicalName(),
-										propertyDescriptor.getName()));
+						String.format(
+								"attempt to write class %s with acessor '%s' (a read-only property)",
+								clazz.getCanonicalName(),
+								propertyDescriptor.getName()));
 			}
 			try {
-				Object value = luaState.checkJavaObject(-1, propertyDescriptor
-						.getPropertyType());
+				Object value = luaState.checkJavaObject(-1,
+						propertyDescriptor.getPropertyType());
 				propertyDescriptor.getWriteMethod().invoke(object, value);
 			} catch (IllegalArgumentException e) {
 				throw new RuntimeException(e);

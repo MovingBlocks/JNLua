@@ -12,9 +12,9 @@ import java.io.PrintWriter;
  * Indicates a Lua runtime error.
  * 
  * <p>
- * This exception is thrown if a Lua runtime error occurs, such as indexing a
- * <code>nil</code> value. The class provides access to the Lua stack trace by
- * means of the {@link #getLuaStackTrace()} method.
+ * This exception is thrown if a Lua runtime error occurs. The class provides
+ * access to the Lua stack trace by means of the {@link #getLuaStackTrace()}
+ * method.
  * </p>
  */
 public class LuaRuntimeException extends LuaException {
