@@ -22,12 +22,12 @@
 /* ---- Definitions ---- */
 #define JNLUA_WEAKREF 0
 #define JNLUA_HARDREF 1
-#define JNLUA_APIVERSION 2
+#define JNLUA_APIVERSION 3
 #define JNLUA_MOBJECT "com.naef.jnlua.Object"
 #define JNLUA_RJUMPBUFFER "com.naef.jnlua.JumpBuffer"
 #define JNLUA_RENV "com.naef.jnlua.Env"
 #define JNLUA_RJAVASTATE "com.naef.jnlua.JavaState"
-#define JNLUA_JNIVERSION JNI_VERSION_1_4
+#define JNLUA_JNIVERSION JNI_VERSION_1_6
 
 #define JNLUA_TRY {\
 	int __checkstack;\
@@ -176,7 +176,7 @@ JNIEXPORT jstring JNICALL Java_com_naef_jnlua_LuaState_lua_1version(JNIEnv *env,
  * lua_newstate()
  * The function is not reentrant. Non-reentrant use is ensured on the Java side.
  */
-JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1newstate (JNIEnv *env, jobject obj, int apiversion) {
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1newstate (JNIEnv *env, jobject obj, int apiversion, jlong existing) {
 	lua_State *luaState;
 	
 	/* Initialized? */
@@ -190,15 +190,11 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1newstate (JNIEnv *env, 
 	}
 
 	/* Create Lua state */
-	luaState = luaL_newstate();
+	luaState = existing == 0 ? luaL_newstate() : (lua_State *) (uintptr_t) existing;
 	if (!luaState || !initLuaState(luaState)) {
 		return;
 	}
 
-	/* Set the Lua state in the Java state. */
-	setLuaThread(env, obj, luaState);
-	setLuaState(env, obj, luaState);
-	
 	/* Setup Lua state */
 	JNLUA_TRY
 		/* Set the Java state in the Lua state. */
@@ -217,23 +213,35 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1newstate (JNIEnv *env, 
 	JNLUA_CATCH
 		lua_close(luaState);
 	JNLUA_END
+	
+	/* Set the Lua state in the Java state. */
+	setLuaThread(env, obj, luaState);
+	setLuaState(env, obj, luaState);
 }
 
 /* lua_close() */
-JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1close (JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1close (JNIEnv *env, jobject obj, jboolean ownState) {
 	lua_State* luaState;
 	lua_State* luaThread;
 	lua_Debug ar;
 
-	/* Can close? */
 	luaState = getLuaState(env, obj);
-	luaThread = getLuaState(env, obj);
-	if (luaState != luaThread || lua_getstack(luaState, 0, &ar)) {
-		return;
+	if (ownState) {
+		/* Can close? */
+		luaThread = getLuaThread(env, obj);
+		if (luaState != luaThread || lua_getstack(luaState, 0, &ar)) {
+			return;
+		}
 	}
 	
-	/* Clear stack */
-	lua_settop(luaState, 0);
+	/* Unset the Lua state in the Java state. */
+	setLuaState(env, obj, NULL);
+	setLuaThread(env, obj, NULL);
+
+	/* Clear stack as we may be closing due to a stack overflow. */
+	if (ownState) {
+		lua_settop(luaState, 0);
+	}
 	
 	/* Unset the Java state in the Lua state. */
 	JNLUA_TRY
@@ -241,12 +249,13 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1close (JNIEnv *env, job
 		setJavaState(env, luaState, NULL);
 	JNLUA_END
 
-	/* Unset the Lua state in the Java state. */
-	setLuaState(env, obj, NULL);
-	setLuaThread(env, obj, NULL);
-	
-	/* Close Lua state */
-	lua_close(luaState);
+	if (ownState) {
+		/* Close Lua state */
+		lua_close(luaState);
+	} else {
+		/* Unset the JNI environment in the Lua state. */
+		setJniEnv(luaState, NULL);
+	}
 }
 
 /* lua_gc() */
@@ -1765,7 +1774,7 @@ JNIEXPORT void JNICALL JNI_OnUnload (JavaVM *vm, void *reserved) {
 	JNIEnv *env;
 	
 	/* Get environment */
-	if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_4) != JNI_OK) {
+	if ((*vm)->GetEnv(vm, (void **) &env, JNLUA_JNIVERSION) != JNI_OK) {
 		return;
 	}
 	
@@ -1953,6 +1962,10 @@ static JNIEnv *getJniEnv (lua_State *luaState) {
 	lua_getfield(luaState, LUA_REGISTRYINDEX, JNLUA_RENV);
 	env = (JNIEnv *) lua_touserdata(luaState, -1);
 	lua_pop(luaState, 1);
+	if (env == NULL) {
+		lua_pushstring(luaState, "no JNI environment");
+		lua_error(luaState);
+	}
 	return env;
 }
 
