@@ -187,7 +187,6 @@ public class LuaConsole {
 			System.out.println();
 		} catch (LuaRuntimeException e) {
 			e.printLuaStackTrace();
-			e.printStackTrace();
 		} catch (LuaException e) {
 			System.err.println(e.getMessage());
 		}
