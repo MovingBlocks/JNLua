@@ -1355,8 +1355,6 @@ public class DefaultJavaReflector implements JavaReflector {
 
 		/**
 		 * Returns whether this invocable has a variable number of arguments.
-		 * 
-		 * @return
 		 */
 		public boolean isVarArgs();
 
