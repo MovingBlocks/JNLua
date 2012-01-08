@@ -24,12 +24,12 @@ jnlua.obj: ..\jnlua.c
 	$(CC) $(CFLAGS) /MD /DLUA_BUILD_AS_DLL /I"$(JDK_DIR)\include" /I"$(JDK_DIR)\include\win32" /I"$(LUA_DIR)\include" ..\jnlua.c
 
 javavm.dll: javavm.obj
-	$(LD) $(LDFLAGS) /OUT:javavm$(VERSION).dll /LIBPATH:"$(LUA_DIR)" /LIBPATH:"$(JDK_DIR)\lib" lua$(VERSION).lib jvm.lib javavm.obj
-	$(MT) $(MTFLAGS) -outputresource:javavm$(VERSION).dll;2 -manifest javavm$(VERSION).dll.manifest 
+	$(LD) $(LDFLAGS) /OUT:javavm.dll /LIBPATH:"$(LUA_DIR)" /LIBPATH:"$(JDK_DIR)\lib" lua$(VERSION).lib jvm.lib javavm.obj
+	$(MT) $(MTFLAGS) -outputresource:javavm.dll;2 -manifest javavm.dll.manifest 
 
-javavm.obj: ..\javavm.c
-	$(CC) $(CFLAGS) /MD /DLUA_BUILD_AS_DLL /I"$(JDK_DIR)\include" /I"$(JDK_DIR)\include\win32" /I"$(LUA_DIR)\include" ..\javavm.c
+javavm.obj: ..\javavm.c ..\javavm.c
+	$(CC) $(CFLAGS) /MD /DLUA_BUILD_AS_DLL /DLUA_LIB /I"$(JDK_DIR)\include" /I"$(JDK_DIR)\include\win32" /I"$(LUA_DIR)\include" ..\javavm.c
 
 clean:
 	-del jnlua$(VERSION).dll jnlua$(VERSION).dll.manifest jnlua$(VERSION).exp jnlua$(VERSION).lib jnlua.obj
-	-del javavm$(VERSION).dll javavm$(VERSION).dll.manifest javavm$(VERSION).exp javavm$(VERSION).lib javavm.obj
+	-del javavm.dll javavm.dll.manifest javavm.exp javavm.lib javavm.obj
