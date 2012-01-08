@@ -13,7 +13,7 @@ CFLAGS=-c -fno-strict-aliasing -fPIC -O2 -Wall -DNDEBUG -D_REENTRANT -DLUA_USE_L
 LDFLAGS=-shared
 
 # Description blocks
-all: libjnlua$(VERSION).so
+all: libjnlua$(VERSION).so javavm.so
 
 libjnlua$(VERSION).so: jnlua.o
 	$(LD) $(LDFLAGS) -Wl,-soname=libjnlua$(VERSION).so -olibjnlua$(VERSION).so -L$(LUA_LIB_DIR) -lc -llua$(VERSION) jnlua.o
@@ -21,5 +21,12 @@ libjnlua$(VERSION).so: jnlua.o
 jnlua.o: ../jnlua.c
 	$(CC) $(CFLAGS) -I$(JDK_DIR)/include -I$(JDK_DIR)/include/linux -I$(LUA_INC_DIR) ../jnlua.c
 
+javavm.so: javavm.o
+	$(LD) $(LDFLAGS) -Wl,-soname=javavm.so -ojavavm.so -L$(LUA_LIB_DIR) -L$(JDK_DIR)/jre/lib/amd64/server -llua$(VERSION) -ljvm javavm.o
+
+javavm.o: ../javavm.c ../javavm.h
+	$(CC) $(CFLAGS) -I$(JDK_DIR)/include -I$(JDK_DIR)/include/linux -I$(LUA_INC_DIR) ../javavm.c
+
 clean:
 	-rm libjnlua$(VERSION).so jnlua.o
+	-rm javavm.so javavm.o

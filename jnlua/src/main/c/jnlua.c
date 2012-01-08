@@ -1461,7 +1461,8 @@ JNIEXPORT jobject JNICALL Java_com_naef_jnlua_LuaState_lua_1checkenum (JNIEnv *e
 	jstring *lstString;
 	const char **lstUtf;
 	jobject result;
-	
+
+	defString = NULL;	
 	defUtf = NULL;
 	lstLength = 0;
 	lstString = NULL;
