@@ -2,6 +2,8 @@ HISTORY for JNLua
 
 * Release 1.0.1
 
+- Added a javavm module, allowing to create a Java VM from Lua.
+
 - Javadoc corrections.
 
 - Corrected an issue where the native library would pass an invalid handle to

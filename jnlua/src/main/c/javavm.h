@@ -1,6 +1,6 @@
  /*
  * $Id$
- * Provides the Java VM module. See LICENSE for license terms.
+ * Provides the Java VM module. See LICENSE.txt for license terms.
  */
 
 #ifndef JNLUA_JAVAVM_INCLUDED
@@ -24,6 +24,6 @@
  * @param L the Lua state
  * @return the number of results
  */
-JNIEXPORT int luaopen_javavm (lua_State *L);
+LUALIB_API int luaopen_javavm (lua_State *L);
 
 #endif /* JNLUA_JAVAVM_INCLUDED */
