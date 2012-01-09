@@ -125,7 +125,6 @@ static jclass ioExceptionClass = NULL;
 static jclass enumClass = NULL;
 static jmethodID nameId = 0;
 static int initialized = 0;
-static jmp_buf initJumpBuffer;
 
 /* ---- Error handling ---- */
 /*

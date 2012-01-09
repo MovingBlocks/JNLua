@@ -33,6 +33,7 @@ static int release_vm (lua_State *L) {
 	jmethodID lua_state_close_id;
 	JNIEnv *env;
 	int res;
+	int i;
 	
 	vm = luaL_checkudata(L, 1, JAVAVM_METATABLE);
 	
@@ -63,6 +64,13 @@ static int release_vm (lua_State *L) {
 		return luaL_error(L, "error destroying Java VM: %d", res);
 	}
 	vm->vm = NULL;
+
+	/* Free options */
+	for (i = 0; i < vm->num_options; i++) {
+		free(vm->options[i].optionString);
+		vm->options[i].optionString = NULL;
+	}
+	vm->num_options = 0;
 	
 	return 0;
 }
@@ -122,9 +130,12 @@ static int create_vm (lua_State *L) {
 		if (strcmp(option, "vfprintf") == 0
 				|| strcmp(option, "exit") == 0
 				|| strcmp(option, "abort") == 0) {
-			luaL_error(L, "unsupported option: %s", option);
+			return luaL_error(L, "unsupported option: %s", option);
 		}
-		vm->options[i - 1].optionString = (char *) option;
+		vm->options[i - 1].optionString = strdup(option);
+		if (!vm->options[i - 1].optionString) {
+			return luaL_error(L, "out of memory");
+		}
 	}
 	
 	/* Create Java VM */
