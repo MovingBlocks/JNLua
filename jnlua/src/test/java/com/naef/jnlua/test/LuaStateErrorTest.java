@@ -229,7 +229,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	/**
 	 * Call(int, int) with an extremely high number of returns.
 	 */
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = LuaRuntimeException.class)
 	public void testOverflowCall() {
 		luaState.openLibs();
 		luaState.getGlobal("print");
@@ -311,7 +311,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	/**
 	 * pushNumber(Double) until stack overflow.
 	 */
-	@Test(expected = IllegalStateException.class)
+	@Test(expected = LuaRuntimeException.class)
 	public void testStackOverflow() {
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			luaState.pushNumber(0.0);
