@@ -24,39 +24,14 @@
 #define JNLUA_HARDREF 1
 #define JNLUA_APIVERSION 3
 #define JNLUA_MOBJECT "com.naef.jnlua.Object"
-#define JNLUA_RJUMPBUFFER "com.naef.jnlua.JumpBuffer"
 #define JNLUA_RENV "com.naef.jnlua.Env"
 #define JNLUA_RJAVASTATE "com.naef.jnlua.JavaState"
 #define JNLUA_JNIVERSION JNI_VERSION_1_6
 
-#define JNLUA_TRY {\
-	int __checkstack;\
-	jmp_buf **__jumpBuffer = NULL;\
-	jmp_buf *__oldJumpBuffer = NULL;\
-	lua_CFunction __oldPanicFunction = NULL;\
-	jmp_buf __newJumpBuffer;\
-	__checkstack = lua_checkstack(luaState, 1);\
-	if (__checkstack) {\
-		setJniEnv(luaState, env);\
-		__jumpBuffer = getJumpBuffer(luaState);\
-		__oldJumpBuffer = *__jumpBuffer;\
-		*__jumpBuffer = &__newJumpBuffer;\
-		__oldPanicFunction = lua_atpanic(luaState, handlePanic);\
-	}\
-	if (__checkstack && setjmp(__newJumpBuffer) == 0) {
-#define JNLUA_CATCH } else {
-#define JNLUA_END }\
-	if (__checkstack) {\
-		lua_atpanic(luaState, __oldPanicFunction);\
-		*__jumpBuffer = __oldJumpBuffer;\
-	} else {\
-		(*env)->ThrowNew(env, illegalStateExceptionClass, "stack overflow");\
-	}\
-}
-
 /* ---- Types ---- */
 /* Structure for reading and writing Java streams. */
 typedef struct StreamStruct  {
+	JNIEnv *env;
 	jobject stream;
 	jbyteArray byteArray;
 	jbyte* bytes;
@@ -68,11 +43,6 @@ static jclass referenceClass(JNIEnv *env, const char *className);
 static jobject newGlobalRef(JNIEnv *env, lua_State *luaState, jobject obj, int type);
 static jbyteArray newByteArray(JNIEnv *env, lua_State *luaState, jsize length);
 static const char *getStringUtfChars(JNIEnv *env, lua_State *luaState, jstring string);
-
-/* ---- Lua state initialization --- */
-static int initLuaState(lua_State *luaState);
-static int handleInitPanic(lua_State *luaState);
-static jmp_buf **getJumpBuffer(lua_State *luaState);
 
 /* ---- Java state operations ---- */
 static lua_State *getLuaState(JNIEnv *env, jobject obj);
@@ -104,13 +74,14 @@ static void pushJavaObject(JNIEnv *env, lua_State *luaState, jobject object);
 static jobject getJavaObject(JNIEnv *env, lua_State *luaState, int index, jclass class);
 static jstring toString(JNIEnv *env, lua_State *luaState, int index);
 
-/* ---- Metamethods and error handling ---- */
+/* ---- Metamethods ---- */
 static int gcJavaObject(lua_State *luaState);
 static int callJavaFunction(lua_State *luaState);
+
+/* ---- Errror handling ---- */
 static int handleError(lua_State *luaState);
 static int processActivationRecord(lua_Debug *ar);
-static int handlePanic(lua_State *luaState);
-static void throwException(lua_State *luaState, int status);
+static void throwException(JNIEnv *env, lua_State *luaState, int status);
 
 /* ---- Stream adapters ---- */
 static const char *readInputStream(lua_State *luaState, void *ud, size_t *size);
@@ -154,7 +125,62 @@ static jmethodID nameId = 0;
 static int initialized = 0;
 static jmp_buf initJumpBuffer;
 
-/* ---- Constants ---- */
+/* ---- Error handling ---- */
+/*
+ * JNI does not allow uncontrolled transitions such as jongjmp between Java
+ * code and native code, but Lua uses longjmp for error handling. The follwing
+ * section replicates logic from luaD_rawrunprotected that is internal to
+ * Lua. Contact me if you know of a more elegant solution ;)
+ */
+
+struct lua_longjmp {
+	struct lua_longjmp *previous;
+	jmp_buf b;
+	volatile int status;
+};
+
+struct lua_State {
+	void *next;
+	unsigned char tt;
+	unsigned char marked;
+	unsigned char status;
+	void *top;
+	void *l_G;
+	void *ci;
+	void *oldpc;
+	void *stack_last;
+	void *stack;
+	int stacksize;
+	unsigned short nny;
+	unsigned short nCcalls;  
+	unsigned char hookmask;
+	unsigned char allowhook;
+	int basehookcount;
+	int hookcount;
+	lua_Hook hook;
+	void *openupval;
+	void *gclist;
+	struct lua_longjmp *errorJmp;  
+};
+
+#define JNLUA_TRY {\
+	unsigned short oldnCcalls = luaState->nCcalls;\
+	struct lua_longjmp lj;\
+	lj.status = LUA_OK;\
+	lj.previous = luaState->errorJmp;\
+	luaState->errorJmp = &lj;\
+	if (setjmp(lj.b) == 0) {\
+		setJniEnv(luaState, env);
+#define JNLUA_CATCH } else {
+#define JNLUA_END }\
+	luaState->errorJmp = lj.previous;\
+	luaState->nCcalls = oldnCcalls;\
+	if (lj.status != LUA_OK) {\
+		throwException(env, luaState, lj.status);\
+	}\
+}
+
+/* ---- Fields ---- */
 /* lua_registryindex() */
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1registryindex(JNIEnv *env, jobject obj) {
 	return (jint) LUA_REGISTRYINDEX;
@@ -192,7 +218,7 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1newstate (JNIEnv *env, 
 
 	/* Create Lua state */
 	luaState = existing == 0 ? luaL_newstate() : (lua_State *) (uintptr_t) existing;
-	if (!luaState || !initLuaState(luaState)) {
+	if (!luaState) {
 		return;
 	}
 
@@ -238,28 +264,26 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1close (JNIEnv *env, job
 			return;
 		}
 	}
-	
+
 	/* Unset the Lua state in the Java state. */
 	setLuaState(env, obj, NULL);
 	setLuaThread(env, obj, NULL);
 
-	/* Clear stack as we may be closing due to a stack overflow. */
 	if (ownState) {
-		lua_settop(luaState, 0);
-	}
-	
-	/* Unset the Java state in the Lua state. */
-	JNLUA_TRY
-		(*env)->DeleteWeakGlobalRef(env, getJavaState(luaState));
-		setJavaState(luaState, NULL);
-	JNLUA_END
-
-	if (ownState) {
+		/* Release Java state */
+		JNLUA_TRY
+			(*env)->DeleteWeakGlobalRef(env, getJavaState(luaState));
+		JNLUA_END
+		
 		/* Close Lua state */
 		lua_close(luaState);
 	} else {
-		/* Unset the JNI environment in the Lua state. */
-		setJniEnv(luaState, NULL);
+		/* Detach Lua state. */
+		JNLUA_TRY
+			(*env)->DeleteWeakGlobalRef(env, getJavaState(luaState));
+			setJavaState(luaState, NULL);
+			setJniEnv(luaState, NULL);
+		JNLUA_END
 	}
 }
 
@@ -345,19 +369,19 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1load (JNIEnv *env, jobj
 
 	chunknameUtf = NULL;
 	modeUtf = NULL;
+	stream.env = env;
 	stream.byteArray = NULL;
 	stream.bytes = NULL;
+	stream.stream = inputStream;
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
 		checkstack(env, luaState, 1);
 		chunknameUtf = getStringUtfChars(env, luaState, chunkname);
 		modeUtf = getStringUtfChars(env, luaState, mode);
-		stream.stream = inputStream;
 		stream.byteArray = newByteArray(env, luaState, 1024);
-		stream.bytes = NULL;
 		status = lua_load(luaState, readInputStream, &stream, chunknameUtf, modeUtf);
 		if (status != LUA_OK) {
-			throwException(luaState, status);
+			throwException(env, luaState, status);
 		}
 	JNLUA_END
 	if (stream.bytes) {
@@ -379,11 +403,12 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1dump (JNIEnv *env, jobj
 	Stream stream;
 	lua_State *luaState;
 
+	stream.env = env;
 	stream.byteArray = NULL;
 	stream.bytes = NULL;
+	stream.stream = outputStream;
 	luaState = getLuaThread(env, obj);
 	JNLUA_TRY
-		stream.stream = outputStream;
 		stream.byteArray = newByteArray(env, luaState, 1024);
 		checknelems(env, luaState, 1);
 		lua_dump(luaState, writeOutputStream, &stream);
@@ -419,7 +444,7 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1pcall (JNIEnv *env, job
 		status = lua_pcall(luaState, nargs, nresults, index);
 		lua_remove(luaState, index);
 		if (status != LUA_OK) {
-			throwException(luaState, status);
+			throwException(env, luaState, status);
 		}
 	JNLUA_END
 }
@@ -1332,7 +1357,7 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1resume (JNIEnv *env, jo
 			lua_xmove(luaThread, luaState, nresults);
 			break;
 		default:
-			throwException(luaThread, status);
+			throwException(env, luaThread, status);
 			nresults = 0;
 		}
 	JNLUA_CATCH
@@ -1884,52 +1909,10 @@ static const char *getStringUtfChars (JNIEnv *env, lua_State *luaState, jstring 
 	return utf;
 }
 
-/* ---- Lua state initialization --- */
-/*
- * Initializes the jump buffer in a Lua state. The function is not
- * reentrant. Non-reentrant use is ensured on the Java side.
- */
-static int initLuaState (lua_State *luaState) {
-	lua_CFunction oldPanicFunction;
-	jmp_buf **jumpBuffer;
-	int result;
-	
-	oldPanicFunction = lua_atpanic(luaState, handleInitPanic);
-	if (setjmp(initJumpBuffer) == 0) {
-		jumpBuffer = (jmp_buf **) lua_newuserdata(luaState, sizeof(jmp_buf *));
-		*jumpBuffer = NULL;
-		lua_setfield(luaState, LUA_REGISTRYINDEX, JNLUA_RJUMPBUFFER);
-		result = 1;
-	} else {
-		result = 0;
-	}
-	lua_atpanic(luaState, oldPanicFunction);
-	return result;
-}
-
-/* Handles panic during initialization. */
-static int handleInitPanic (lua_State *luaState) {
-	longjmp(initJumpBuffer, -1);
-	return 1; 
-}
-
-/* Returns the jump buffer from the Lua state. */
-static jmp_buf **getJumpBuffer (lua_State *luaState) {
-	jmp_buf **jumpBuffer;
-
-	lua_getfield(luaState, LUA_REGISTRYINDEX, JNLUA_RJUMPBUFFER);
-	jumpBuffer = (jmp_buf **) lua_touserdata(luaState, -1);
-	lua_pop(luaState, 1);
-	return jumpBuffer;
-}
-
 /* ---- Java state operations ---- */
 /* Returns the Lua state from the Java state. */
 static lua_State *getLuaState (JNIEnv *env, jobject obj) {
-	lua_State *luaState;
-	
-	luaState = (lua_State *) (uintptr_t) (*env)->GetLongField(env, obj, luaStateId);
-	return luaState;
+	return (lua_State *) (uintptr_t) (*env)->GetLongField(env, obj, luaStateId);
 }
 
 /* Sets the Lua state in the Java state. */
@@ -1937,12 +1920,9 @@ static void setLuaState (JNIEnv *env, jobject obj, lua_State *luaState) {
 	(*env)->SetLongField(env, obj, luaStateId, (jlong) (uintptr_t) luaState);
 }
 
-/* Returns the Lua thread from the Java state. Also updates the JNI environment in the Lua state. */
+/* Returns the Lua thread from the Java state. */
 static lua_State *getLuaThread (JNIEnv *env, jobject obj) {
-	lua_State *luaState;
-	
-	luaState = (lua_State *) (uintptr_t) (*env)->GetLongField(env, obj, luaThreadId);
-	return luaState;
+	return (lua_State *) (uintptr_t) (*env)->GetLongField(env, obj, luaThreadId);
 }
 
 /* Sets the Lua state in the Java state. */
@@ -2070,9 +2050,8 @@ static void check (JNIEnv *env, lua_State *luaState, int cond, jthrowable throwa
 
 /* Throws an exception */
 static void throw (JNIEnv *env, lua_State *luaState, jthrowable throwableClass, const char *msg) {
-	lua_settop(luaState, 0);
 	(*env)->ThrowNew(env, throwableClass, msg);
-	longjmp(**getJumpBuffer(luaState), -1);
+	longjmp(luaState->errorJmp->b, -1);
 }
 
 /* ---- Java object helpers ---- */
@@ -2131,7 +2110,7 @@ static jstring toString (JNIEnv *env, lua_State *luaState, int index) {
 	return string;
 }
 
-/* ---- Metamethods and error handling ---- */
+/* ---- Metamethods ---- */
 /* Finalizes Java objects. */
 static int gcJavaObject (lua_State *luaState) {
 	JNIEnv* env;
@@ -2214,6 +2193,7 @@ static int callJavaFunction (lua_State *luaState) {
 	return result;
 }
 
+/* ---- Error handling ---- */
 /* Handles Lua errors. */
 static int handleError (lua_State *luaState) {
 	JNIEnv *env;
@@ -2287,7 +2267,6 @@ static int handleError (lua_State *luaState) {
 	
 	/* Replace error */
 	pushJavaObject(env, luaState, luaErrorObj);
-	lua_remove(luaState, -2);
 	return 1;
 }
 
@@ -2307,31 +2286,14 @@ static int processActivationRecord (lua_Debug *ar) {
 	return ar->name || ar->source;
 }
 
-/* Handles panic. The error message is on the stack. */
-static int handlePanic (lua_State *luaState) {
-	int status;
-	
-	/* Throw the appropriate excepion, consuming the message on the stack. */
-	status = lua_status(luaState);
-	throwException(luaState, status);
-	
-	/* Jump out */
-	longjmp(**getJumpBuffer(luaState), status);
-	
-	/* Not reached */
-	return 1;
-}
-
 /* Handles Lua errors by throwing a Java exception. */
-static void throwException (lua_State *luaState, int status) {
-	JNIEnv *env;
+static void throwException (JNIEnv* env, lua_State *luaState, int status) {
 	jclass throwableClass;
 	jmethodID throwableInitId;
 	jthrowable throwable;
 	jobject luaErrorObj;
 	
 	/* Determine the type of exception to throw. */
-	env = getJniEnv(luaState);
 	switch (status) {
 	case LUA_ERRSYNTAX:
 		throwableClass = luaSyntaxExceptionClass;
@@ -2378,27 +2340,25 @@ static void throwException (lua_State *luaState, int status) {
 /* ---- Stream adapters ---- */
 /* Lua reader for Java input streams. */
 static const char *readInputStream (lua_State *luaState, void *ud, size_t *size) {
-	JNIEnv *env;
 	Stream *stream;
 	int read;
 
-	env = getJniEnv(luaState);
 	stream = (Stream *) ud;
-	read = (*env)->CallIntMethod(env, stream->stream, readId, stream->byteArray);
-	if ((*env)->ExceptionCheck(env)) {
+	read = (*stream->env)->CallIntMethod(stream->env, stream->stream, readId, stream->byteArray);
+	if ((*stream->env)->ExceptionCheck(stream->env)) {
 		return NULL;
 	}
 	if (read == -1) {
 		return NULL;
 	}
 	if (stream->bytes && stream->isCopy) {
-		(*env)->ReleaseByteArrayElements(env, stream->byteArray, stream->bytes, JNI_ABORT);
+		(*stream->env)->ReleaseByteArrayElements(stream->env, stream->byteArray, stream->bytes, JNI_ABORT);
 		stream->bytes = NULL;
 	}
 	if (!stream->bytes) {
-		stream->bytes = (*env)->GetByteArrayElements(env, stream->byteArray, &stream->isCopy);
+		stream->bytes = (*stream->env)->GetByteArrayElements(stream->env, stream->byteArray, &stream->isCopy);
 		if (!stream->bytes) {
-			(*env)->ThrowNew(env, ioExceptionClass, "error accessing IO buffer");
+			(*stream->env)->ThrowNew(stream->env, ioExceptionClass, "error accessing IO buffer");
 			return NULL;
 		}
 	}
@@ -2408,24 +2368,22 @@ static const char *readInputStream (lua_State *luaState, void *ud, size_t *size)
 
 /* Lua writer for Java output streams. */
 static int writeOutputStream (lua_State *luaState, const void *data, size_t size, void *ud) {
-	JNIEnv *env;
 	Stream *stream;
 
-	env = getJniEnv(luaState);
 	stream = (Stream *) ud;
 	if (!stream->bytes) {
-		stream->bytes = (*env)->GetByteArrayElements(env, stream->byteArray, &stream->isCopy);
+		stream->bytes = (*stream->env)->GetByteArrayElements(stream->env, stream->byteArray, &stream->isCopy);
 		if (!stream->bytes) {
-			(*env)->ThrowNew(env, ioExceptionClass, "error accessing IO buffer");
+			(*stream->env)->ThrowNew(stream->env, ioExceptionClass, "error accessing IO buffer");
 			return 1;
 		}
 	}
 	memcpy(stream->bytes, data, size);
 	if (stream->isCopy) {
-		(*env)->ReleaseByteArrayElements(env, stream->byteArray, stream->bytes, JNI_COMMIT);
+		(*stream->env)->ReleaseByteArrayElements(stream->env, stream->byteArray, stream->bytes, JNI_COMMIT);
 	}
-	(*env)->CallVoidMethod(env, stream->stream, writeId, stream->byteArray, 0, size);
-	if ((*env)->ExceptionCheck(env)) {
+	(*stream->env)->CallVoidMethod(stream->env, stream->stream, writeId, stream->byteArray, 0, size);
+	if ((*stream->env)->ExceptionCheck(stream->env)) {
 		return 1;
 	}
 	return 0;
