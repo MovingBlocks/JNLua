@@ -9,6 +9,12 @@ HISTORY for JNLua
 - Corrected an issue where the native library would pass an invalid handle to
 the ReleaseStringUTFChars function.
 
+- Corrected an issue where the native library would not properly catch Lua
+errors, leading to uncontrolled transitions between Java code and native code.
+
+- Corrected an issue where the native library would exit incorrectly from the
+lua_tojavafunction function.
+
 
 * Release 1.0.0 (2012-01-05)
 
