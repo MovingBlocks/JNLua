@@ -271,16 +271,22 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1close (JNIEnv *env, job
 	setLuaThread(env, obj, NULL);
 
 	if (ownState) {
-		/* Release Java state */
+		/* Prevent possible stack overflow when closing. */
+		lua_settop(L, 0);
+	}
+	
+	JNLUA_TRY
+		/* Release the Java state */
 		(*env)->DeleteWeakGlobalRef(env, getJavaState(L));
 		
-		/* Close Lua state */
-		lua_close(L);
-	} else {
-		/* Detach Lua state. */
-		(*env)->DeleteWeakGlobalRef(env, getJavaState(L));
+		/* Unset the Java state in the Lua state. */
 		setJavaState(L, NULL);
 		setJniEnv(L, NULL);
+	JNLUA_END
+
+	if (ownState) {
+		/* Close Lua state */
+		lua_close(L);
 	}
 }
 
