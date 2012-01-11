@@ -1278,7 +1278,6 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1resume (JNIEnv *env, jo
 			break;
 		default:
 			JNLUA_THROW(status);
-			nresults = 0;
 		}
 	JNLUA_API_CATCH
 	return (jint) nresults;
