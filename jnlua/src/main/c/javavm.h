@@ -13,6 +13,7 @@
 #include <lauxlib.h>
 #ifdef LUA_WIN
 #include <stddef.h>
+#pragma warning(disable : 4996)
 #endif
 #ifdef LUA_USE_POSIX
 #include <stdint.h>

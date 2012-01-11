@@ -65,6 +65,9 @@
 						<descriptorRef>bin</descriptorRef>
 						<descriptorRef>src</descriptorRef>
 					</descriptorRefs>
+					<descriptors>
+						<descriptor>src/main/assembly/native.xml</descriptor>
+					</descriptors>
 				</configuration>
 				<executions>
 					<execution>
