@@ -132,7 +132,9 @@ static int initialized = 0;
  * JNI does not allow uncontrolled transitions such as jongjmp between Java
  * code and native code, but Lua uses longjmp for error handling. The follwing
  * section replicates logic from luaD_rawrunprotected that is internal to
- * Lua. Contact me if you know of a more elegant solution ;)
+ * Lua.
+ *
+ * TODO: Replace by a fully pcall-based implementation.
  */
 
 struct lua_longjmp {

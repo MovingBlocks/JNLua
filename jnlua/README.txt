@@ -1,6 +1,6 @@
 HISTORY for JNLua
 
-* Release 1.0.1
+* Release 1.0.1 (2012-01-12)
 
 - Added a javavm module, allowing to create a Java VM from Lua.
 
