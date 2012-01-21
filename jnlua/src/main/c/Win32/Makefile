@@ -27,7 +27,7 @@ javavm.dll: javavm.obj
 	$(LD) $(LDFLAGS) /OUT:javavm.dll /LIBPATH:"$(LUA_DIR)" /LIBPATH:"$(JDK_DIR)\lib" lua$(VERSION).lib jvm.lib javavm.obj
 	$(MT) $(MTFLAGS) -outputresource:javavm.dll;2 -manifest javavm.dll.manifest 
 
-javavm.obj: ..\javavm.c ..\javavm.c
+javavm.obj: ..\javavm.c ..\javavm.h
 	$(CC) $(CFLAGS) /MD /DLUA_BUILD_AS_DLL /DLUA_LIB /I"$(JDK_DIR)\include" /I"$(JDK_DIR)\include\win32" /I"$(LUA_DIR)\include" ..\javavm.c
 
 clean:
