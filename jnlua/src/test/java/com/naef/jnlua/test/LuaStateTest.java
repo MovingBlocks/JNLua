@@ -27,6 +27,7 @@ import com.naef.jnlua.DefaultConverter;
 import com.naef.jnlua.DefaultJavaReflector;
 import com.naef.jnlua.JavaFunction;
 import com.naef.jnlua.JavaReflector;
+import com.naef.jnlua.LuaRuntimeException;
 import com.naef.jnlua.JavaReflector.Metamethod;
 import com.naef.jnlua.LuaState;
 import com.naef.jnlua.LuaState.ArithOperator;
@@ -950,6 +951,32 @@ public class LuaStateTest extends AbstractLuaTest {
 	}
 
 	/**
+	 * Tests the toIntegerX method.
+	 */
+	@Test
+	public void testToIntegerX() throws Exception {
+		// Setup stack
+		luaState.openLibs();
+		makeStack();
+
+		// Test
+		assertNull(luaState.toIntegerX(1));
+		assertNull(luaState.toIntegerX(2));
+		assertEquals(Integer.valueOf(1), luaState.toIntegerX(3));
+		assertNull(luaState.toIntegerX(4));
+		assertEquals(Integer.valueOf(1), luaState.toIntegerX(5));
+		assertNull(luaState.toIntegerX(6));
+		assertNull(luaState.toIntegerX(7));
+		assertNull(luaState.toIntegerX(8));
+		assertNull(luaState.toIntegerX(9));
+		assertNull(luaState.toIntegerX(10));
+
+		// Finish
+		luaState.pop(10);
+		assertEquals(0, luaState.getTop());
+	}
+
+	/**
 	 * Tests the toJavaFunction method.
 	 */
 	@Test
@@ -1049,6 +1076,32 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals(0.0, luaState.toNumber(8), 0.0);
 		assertEquals(0.0, luaState.toNumber(9), 0.0);
 		assertEquals(0.0, luaState.toNumber(10), 0.0);
+
+		// Finish
+		luaState.pop(10);
+		assertEquals(0, luaState.getTop());
+	}
+
+	/**
+	 * Tests the toNumberX method.
+	 */
+	@Test
+	public void testToNumberX() throws Exception {
+		// Setup stack
+		luaState.openLibs();
+		makeStack();
+
+		// Test
+		assertNull(luaState.toNumberX(1));
+		assertNull(luaState.toNumberX(2));
+		assertEquals(Double.valueOf(1.0), luaState.toNumberX(3));
+		assertNull(luaState.toNumberX(4));
+		assertEquals(Double.valueOf(1.0), luaState.toNumberX(5));
+		assertNull(luaState.toNumberX(6));
+		assertNull(luaState.toNumberX(7));
+		assertNull(luaState.toNumberX(8));
+		assertNull(luaState.toNumberX(9));
+		assertNull(luaState.toNumberX(10));
 
 		// Finish
 		luaState.pop(10);
@@ -1469,7 +1522,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.newTable();
 		luaState.pushString("value");
 		luaState.setField(2, "key");
-		assertTrue(luaState.setMetatable(1));
+		luaState.setMetatable(1);
 
 		// getMetatable()
 		assertTrue(luaState.getMetatable(1));
@@ -1503,6 +1556,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.load("yieldfunc(... + 1)\n" + "coroutine.yield(... + 2)\n"
 				+ "return ... + 3\n", "=testThread");
 		luaState.newThread();
+		assertEquals(LuaType.THREAD, luaState.type(-1));
 
 		// Start
 		luaState.pushInteger(1);
@@ -1656,6 +1710,57 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Cleanup
 		luaState.pop(1);
 		assertEquals(0, luaState.getTop());
+	}
+
+	/**
+	 * Tests the check exception message.
+	 */
+	@Test
+	public void testCheckMessage() {
+		// Message
+		LuaRuntimeException luaRuntimeException = null;
+		try {
+			luaState.checkArg(3, false, "msg");
+		} catch (LuaRuntimeException e) {
+			luaRuntimeException = e;
+		}
+		assertNotNull(luaRuntimeException);
+		assertEquals("bad argument #3 (msg)", luaRuntimeException.getMessage());
+
+		// Function name
+		luaState.register(new NamedJavaFunction() {
+			@Override
+			public int invoke(LuaState luaState) {
+				luaState.checkArg(3, false, "msg");
+				return 0;
+			}
+
+			@Override
+			public String getName() {
+				return "f";
+			}
+		});
+		luaState.load("f()", "=testCheckMessageFunction");
+		try {
+			luaState.call(0, 0);
+		} catch (LuaRuntimeException e) {
+			luaRuntimeException = e;
+		}
+		assertNotNull(luaRuntimeException);
+		assertEquals("testCheckMessageFunction:1: bad argument #3 to 'f' (msg)",
+				luaRuntimeException.getMessage());
+
+		// Method name
+		luaRuntimeException = null;
+		luaState.load("t = { m = f } t:m()", "=testCheckMessageMethod");
+		try {
+			luaState.call(0, 0);
+		} catch (LuaRuntimeException e) {
+			luaRuntimeException = e;
+		}
+		assertNotNull(luaRuntimeException);
+		assertEquals("testCheckMessageMethod:1: bad argument #2 to 'm' (msg)",
+				luaRuntimeException.getMessage());
 	}
 
 	// -- Proxy tests

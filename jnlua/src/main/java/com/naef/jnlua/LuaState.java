@@ -147,7 +147,7 @@ public class LuaState {
 	 * state and must be closed when the Java state closes.
 	 */
 	private boolean ownState;
-	
+
 	/**
 	 * The <code>lua_State</code> pointer on the JNI side. <code>0</code>
 	 * implies that this Lua state is closed. The field is modified exclusively
@@ -220,9 +220,7 @@ public class LuaState {
 	 */
 	private LuaState(long luaState) {
 		ownState = luaState == 0L;
-		synchronized (getClass()) {
-			lua_newstate(APIVERSION, luaState);
-		}
+		lua_newstate(APIVERSION, luaState);
 		check();
 
 		// Create a finalize guardian
@@ -1072,6 +1070,21 @@ public class LuaState {
 	}
 
 	/**
+	 * Returns the integer representation of the value at the specified stack
+	 * index. The value must be a number or a string convertible to a number.
+	 * Otherwise, the method returns <code>null</code>.
+	 * 
+	 * @param index
+	 *            the stack index
+	 * @return the integer representation, or <code>null</code>
+	 * @since JNLua 1.0.2
+	 */
+	public synchronized Integer toIntegerX(int index) {
+		check();
+		return lua_tointegerx(index);
+	}
+
+	/**
 	 * Returns the Java function of the value at the specified stack index. If
 	 * the value is not a Java function, the method returns <code>null</code>.
 	 * 
@@ -1137,6 +1150,21 @@ public class LuaState {
 	public synchronized double toNumber(int index) {
 		check();
 		return lua_tonumber(index);
+	}
+
+	/**
+	 * Returns the number representation of the value at the specified stack
+	 * index. The value must be a number or a string convertible to a number.
+	 * Otherwise, the method returns <code>null</code>.
+	 * 
+	 * @param index
+	 *            the stack index
+	 * @return the number representation, or <code>null</code>
+	 * @since JNLua 1.0.2
+	 */
+	public synchronized Double toNumberX(int index) {
+		check();
+		return lua_tonumberx(index);
 	}
 
 	/**
@@ -1229,6 +1257,10 @@ public class LuaState {
 	// -- Stack operation
 	/**
 	 * Returns the absolute stack index of the specified index.
+	 * 
+	 * <p>
+	 * The stack index may be non-valid.
+	 * </p>
 	 * 
 	 * @param index
 	 *            the stack index
@@ -1567,9 +1599,9 @@ public class LuaState {
 	 *            the stack index containing the value to set the metatable for
 	 * @return whether the metatable was set
 	 */
-	public synchronized boolean setMetatable(int index) {
+	public synchronized void setMetatable(int index) {
 		check();
-		return lua_setmetatable(index) != 0;
+		lua_setmetatable(index);
 	}
 
 	// -- Thread
@@ -1723,7 +1755,9 @@ public class LuaState {
 	 */
 	public synchronized void checkArg(int index, boolean condition, String msg) {
 		check();
-		lua_argcheck(condition, index, msg);
+		if (!condition) {
+			throw getArgException(index, msg);
+		}
 	}
 
 	/**
@@ -1741,7 +1775,7 @@ public class LuaState {
 	 */
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values) {
 		check();
-		return lua_checkenum(index, null, values);
+		return checkEnum(index, values, null);
 	}
 
 	/**
@@ -1764,10 +1798,14 @@ public class LuaState {
 	public synchronized <T extends Enum<T>> T checkEnum(int index, T[] values,
 			T d) {
 		check();
-		if (d == null) {
-			throw new NullPointerException();
+		String s = d != null ? checkString(index, d.name())
+				: checkString(index);
+		for (int i = 0; i < values.length; i++) {
+			if (values[i].name().equals(s)) {
+				return values[i];
+			}
 		}
-		return lua_checkenum(index, d, values);
+		throw getArgException(index, String.format("invalid option '%s'", s));
 	}
 
 	/**
@@ -1782,7 +1820,11 @@ public class LuaState {
 	 */
 	public synchronized int checkInteger(int index) {
 		check();
-		return lua_checkinteger(index);
+		Integer integer = toIntegerX(index);
+		if (integer == null) {
+			throw getArgTypeException(index, LuaType.NUMBER);
+		}
+		return integer.intValue();
 	}
 
 	/**
@@ -1801,7 +1843,10 @@ public class LuaState {
 	 */
 	public synchronized int checkInteger(int index, int d) {
 		check();
-		return lua_optinteger(index, d);
+		if (isNoneOrNil(index)) {
+			return d;
+		}
+		return checkInteger(index);
 	}
 
 	/**
@@ -1870,7 +1915,11 @@ public class LuaState {
 	 */
 	public synchronized double checkNumber(int index) {
 		check();
-		return lua_checknumber(index);
+		Double number = toNumberX(index);
+		if (number == null) {
+			throw getArgTypeException(index, LuaType.NUMBER);
+		}
+		return number.doubleValue();
 	}
 
 	/**
@@ -1889,7 +1938,10 @@ public class LuaState {
 	 */
 	public synchronized double checkNumber(int index, double d) {
 		check();
-		return lua_optnumber(index, d);
+		if (isNoneOrNil(index)) {
+			return d;
+		}
+		return checkNumber(index);
 	}
 
 	/**
@@ -1906,7 +1958,7 @@ public class LuaState {
 	 */
 	public synchronized int checkOption(int index, String[] options) {
 		check();
-		return lua_checkoption(index, null, options);
+		return checkOption(index, options, null);
 	}
 
 	/**
@@ -1927,10 +1979,13 @@ public class LuaState {
 	 */
 	public synchronized int checkOption(int index, String[] options, String d) {
 		check();
-		if (d == null) {
-			throw new NullPointerException();
+		String s = d != null ? checkString(index, d) : checkString(index);
+		for (int i = 0; i < options.length; i++) {
+			if (options[i].equals(s)) {
+				return i;
+			}
 		}
-		return lua_checkoption(index, d, options);
+		throw getArgException(index, String.format("invalid option '%s'", s));
 	}
 
 	/**
@@ -1944,7 +1999,10 @@ public class LuaState {
 	 */
 	public synchronized String checkString(int index) {
 		check();
-		return lua_checkstring(index);
+		if (!isString(index)) {
+			throw getArgTypeException(index, LuaType.STRING);
+		}
+		return toString(index);
 	}
 
 	/**
@@ -1962,7 +2020,10 @@ public class LuaState {
 	 */
 	public synchronized String checkString(int index, String d) {
 		check();
-		return lua_optstring(index, d);
+		if (isNoneOrNil(index)) {
+			return d;
+		}
+		return checkString(index);
 	}
 
 	/**
@@ -1977,7 +2038,9 @@ public class LuaState {
 	 */
 	public synchronized void checkType(int index, LuaType type) {
 		check();
-		lua_checktype(index, type.ordinal());
+		if (type(index) != type) {
+			throw getArgTypeException(index, type);
+		}
 	}
 
 	// -- Proxy
@@ -2086,6 +2149,51 @@ public class LuaState {
 		}
 	}
 
+	/**
+	 * Creates a Lua runtime exception to indicate an argument type error.
+	 */
+	private LuaRuntimeException getArgTypeException(int index, LuaType type) {
+		return getArgException(index,
+				String.format("%s expected, got %s", type.toString()
+						.toLowerCase(), type(index).toString().toLowerCase()));
+	}
+
+	/**
+	 * Creates a Lua runtime exception to indicate an argument error.
+	 * 
+	 * @param extraMsg
+	 * @return
+	 */
+	private LuaRuntimeException getArgException(int index, String extraMsg) {
+		check();
+		
+		// Get execution point
+		String name = null, nameWhat = null;
+		LuaDebug luaDebug = lua_getstack(0);
+		if (luaDebug != null) {
+			lua_getinfo("n", luaDebug);
+			name = luaDebug.getName();
+			nameWhat = luaDebug.getNameWhat();
+		}
+		
+		// Adjust for methods
+		if ("method".equals(nameWhat)) {
+			index--;
+		}
+		
+		// Format message
+		String msg;
+		String argument = index > 0 ? String.format("argument #%d", index)
+				: "self argument";
+		if (name != null) {
+			msg = String
+					.format("bad %s to '%s' (%s)", argument, name, extraMsg);
+		} else {
+			msg = String.format("bad %s (%s)", argument, extraMsg);
+		}
+		return new LuaRuntimeException(msg);
+	}
+
 	// -- Native methods
 	private static native int lua_registryindex();
 
@@ -2158,11 +2266,15 @@ public class LuaState {
 
 	private native int lua_tointeger(int index);
 
+	private native Integer lua_tointegerx(int index);
+
 	private native JavaFunction lua_tojavafunction(int index);
 
 	private native Object lua_tojavaobject(int index);
 
 	private native double lua_tonumber(int index);
+
+	private native Double lua_tonumberx(int index);
 
 	private native long lua_topointer(int index);
 
@@ -2220,7 +2332,7 @@ public class LuaState {
 
 	private native int lua_getmetatable(int index);
 
-	private native int lua_setmetatable(int index);
+	private native void lua_setmetatable(int index);
 
 	private native int lua_getmetafield(int index, String k);
 
@@ -2234,29 +2346,13 @@ public class LuaState {
 
 	private native void lua_unref(int index, int ref);
 
+	private native LuaDebug lua_getstack(int level);
+
+	private native int lua_getinfo(String what, LuaDebug ar);
+
 	private native int lua_tablesize(int index);
 
 	private native void lua_tablemove(int index, int from, int to, int count);
-
-	private native void lua_argcheck(boolean cond, int narg, String extraMsg);
-
-	private native <T> T lua_checkenum(int narg, T def, T[] lst);
-
-	private native int lua_checkinteger(int narg);
-
-	private native double lua_checknumber(int narg);
-
-	private native int lua_checkoption(int narg, String def, String[] lst);
-
-	private native String lua_checkstring(int narg);
-
-	private native void lua_checktype(int narg, int type);
-
-	private native int lua_optinteger(int narg, int d);
-
-	private native double lua_optnumber(int narg, double d);
-
-	private native String lua_optstring(int narg, String d);
 
 	// -- Enumerated types
 	/**
@@ -2583,5 +2679,63 @@ public class LuaState {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Lua debug structure.
+	 */
+	private static class LuaDebug {
+		/**
+		 * The <code>lua_Debug</code> pointer on the JNI side. <code>0</code>
+		 * implies that the activation record has been freed. The field is
+		 * modified exclusively on the JNI side and must not be touched on the
+		 * Java side.
+		 */
+		private long luaDebug;
+
+		/**
+		 * Ensures proper finalization of this Lua debug structure.
+		 */
+		private Object finalizeGuardian;
+
+		/**
+		 * Creates a new instance.
+		 */
+		private LuaDebug(long luaDebug, boolean ownDebug) {
+			this.luaDebug = luaDebug;
+			if (ownDebug) {
+				finalizeGuardian = new Object() {
+					@Override
+					public void finalize() {
+						synchronized (LuaDebug.this) {
+							lua_debugfree();
+						}
+					}
+				};
+			}
+		}
+
+		// -- Properties
+		/**
+		 * Returns a reasonable name for the function given by this activation
+		 * record, or <code>null</code> if none is found.
+		 */
+		public String getName() {
+			return lua_debugname();
+		}
+
+		/**
+		 * Explains the name of the function given by this activation record.
+		 */
+		public String getNameWhat() {
+			return lua_debugnamewhat();
+		}
+
+		// -- Native methods
+		private native void lua_debugfree();
+
+		private native String lua_debugname();
+
+		private native String lua_debugnamewhat();
 	}
 }

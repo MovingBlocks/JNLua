@@ -229,7 +229,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	/**
 	 * Call(int, int) with an extremely high number of returns.
 	 */
-	@Test(expected = LuaRuntimeException.class)
+	@Test(expected = IllegalStateException.class)
 	public void testOverflowCall() {
 		luaState.openLibs();
 		luaState.getGlobal("print");
@@ -311,7 +311,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	/**
 	 * pushNumber(Double) until stack overflow.
 	 */
-	@Test(expected = LuaRuntimeException.class)
+	@Test(expected = IllegalStateException.class)
 	public void testStackOverflow() {
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			luaState.pushNumber(0.0);
@@ -850,7 +850,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	}
 
 	/**
-	 * yield across call boundary.
+	 * yield across C-call boundary.
 	 */
 	@Test(expected=LuaRuntimeException.class)
 	public void testIllegalYield2() {
@@ -968,15 +968,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 
 	// -- Argument checking tests
 	/**
-	 * checkArg(int, boolean, String) with null string.
-	 */
-	@Test(expected = NullPointerException.class)
-	public void testNullCheckArg() {
-		luaState.pushBoolean(false);
-		luaState.checkArg(1, true, null);
-	}
-
-	/**
 	 * checkArg(int, boolean, String) with false condition.
 	 */
 	@Test(expected = LuaRuntimeException.class)
@@ -990,7 +981,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullCheckEnum1() {
-		luaState.pushBoolean(false);
+		luaState.pushString("");
 		luaState.checkEnum(1, (GcAction[]) null);
 	}
 
@@ -999,7 +990,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = NullPointerException.class)
 	public void testNullCheckEnum2() {
-		luaState.pushBoolean(false);
+		luaState.pushString("");
 		luaState.checkEnum(1, null, GcAction.STOP);
 	}
 
