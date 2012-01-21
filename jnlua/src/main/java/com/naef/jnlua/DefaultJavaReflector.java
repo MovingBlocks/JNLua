@@ -210,7 +210,13 @@ public class DefaultJavaReflector implements JavaReflector {
 			accessibleConstructors
 					.add(new InvocableConstructor(constructors[i]));
 		}
-		result.put("new", new InvocableAccessor(clazz, accessibleConstructors));
+		if (clazz.isInterface()) {
+			accessibleConstructors.add(new InvocableProxy(clazz));
+		}
+		if (!accessibleConstructors.isEmpty()) {
+			result.put("new", new InvocableAccessor(clazz,
+					accessibleConstructors));
+		}
 
 		// Properties
 		BeanInfo beanInfo;
@@ -982,7 +988,11 @@ public class DefaultJavaReflector implements JavaReflector {
 
 			// Return
 			if (invocable.getReturnType() != Void.TYPE) {
-				luaState.pushJavaObject(result);
+				if (invocable.isRawReturn()) {
+					luaState.pushJavaObjectRaw(result);
+				} else {
+					luaState.pushJavaObject(result);
+				}
 				return 1;
 			} else {
 				return 0;
@@ -1323,8 +1333,6 @@ public class DefaultJavaReflector implements JavaReflector {
 
 		/**
 		 * Returns the modifiers of this invocable.
-		 * 
-		 * @return
 		 */
 		public int getModifiers();
 
@@ -1337,6 +1345,12 @@ public class DefaultJavaReflector implements JavaReflector {
 		 * Returns the return type of this invocable.
 		 */
 		public Class<?> getReturnType();
+
+		/**
+		 * Returns whether this invocable has a return value that must be pushed
+		 * raw.
+		 */
+		public boolean isRawReturn();
 
 		/**
 		 * Returns the number of parameters.
@@ -1404,6 +1418,11 @@ public class DefaultJavaReflector implements JavaReflector {
 		@Override
 		public Class<?> getReturnType() {
 			return method.getReturnType();
+		}
+
+		@Override
+		public boolean isRawReturn() {
+			return false;
 		}
 
 		@Override
@@ -1486,6 +1505,11 @@ public class DefaultJavaReflector implements JavaReflector {
 		}
 
 		@Override
+		public boolean isRawReturn() {
+			return false;
+		}
+
+		@Override
 		public int getParameterCount() {
 			return parameterTypes.length;
 		}
@@ -1519,6 +1543,89 @@ public class DefaultJavaReflector implements JavaReflector {
 		@Override
 		public String toString() {
 			return constructor.toString();
+		}
+	}
+
+	/**
+	 * Invocable proxy.
+	 */
+	private static class InvocableProxy implements Invocable {
+		// -- Static
+		private static final Class<?>[] PARAMETER_TYPES = new Class<?>[] { LuaValueProxy.class };
+
+		// -- State
+		private Class<?> interfaze;
+
+		/**
+		 * Creates a new instance.
+		 */
+		public InvocableProxy(Class<?> interfaze) {
+			this.interfaze = interfaze;
+		}
+
+		@Override
+		public String getWhat() {
+			return "proxy";
+		}
+
+		@Override
+		public Class<?> getDeclaringClass() {
+			return interfaze;
+		}
+
+		@Override
+		public int getModifiers() {
+			return interfaze.getModifiers() | Modifier.STATIC;
+		}
+
+		@Override
+		public String getName() {
+			return "new";
+		}
+
+		@Override
+		public Class<?> getReturnType() {
+			return interfaze;
+		}
+
+		@Override
+		public boolean isRawReturn() {
+			return true;
+		}
+
+		@Override
+		public int getParameterCount() {
+			return 1;
+		}
+
+		@Override
+		public Class<?>[] getParameterTypes() {
+			return PARAMETER_TYPES;
+		}
+
+		public Class<?> getParameterType(int index) {
+			return PARAMETER_TYPES[0];
+		}
+
+		@Override
+		public boolean isVarArgs() {
+			return false;
+		}
+
+		@Override
+		public Object invoke(Object obj, Object... args)
+				throws InstantiationException, IllegalAccessException,
+				IllegalArgumentException, InvocationTargetException {
+			LuaValueProxy luaValueProxy = (LuaValueProxy) args[0];
+			luaValueProxy.pushValue();
+			Object proxy = luaValueProxy.getLuaState().getProxy(-1, interfaze);
+			luaValueProxy.getLuaState().pop(1);
+			return proxy;
+		}
+
+		@Override
+		public String toString() {
+			return interfaze.toString();
 		}
 	}
 
