@@ -649,7 +649,6 @@ static int isjavaobject_protected (lua_State *L) {
 }
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1isjavaobject (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
-	int result = 0;
 	
 	JNLUA_ENV(env);
 	L = getluathread(obj);
@@ -1120,8 +1119,8 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1settop (JNIEnv *env, jo
 	
 	JNLUA_ENV(env);
 	L = getluathread(obj);
-	if (index >= 0 && (index <= lua_gettop(L) || checkstack(L, index - lua_gettop(L)))
-			|| index < 0 && checkrealindex(L, index)) {
+	if ((index >= 0 && (index <= lua_gettop(L) || checkstack(L, index - lua_gettop(L))))
+			|| (index < 0 && checkrealindex(L, index))) {
 		lua_settop(L, index);
 	}
 }
@@ -1415,7 +1414,6 @@ static int getmetafield_protected (lua_State *L) {
 }
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1getmetafield (JNIEnv *env, jobject obj, jint index, jstring k) {
 	lua_State *L;
-	int result = 0;
 	
 	getmetafield_k = NULL;
 	JNLUA_ENV(env);
@@ -1613,7 +1611,6 @@ static int tablesize_protected (lua_State *L) {
 }
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1tablesize (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
-	int count = 0;
 	
 	JNLUA_ENV(env);
 	L = getluathread(obj);

@@ -1,7 +1,7 @@
 # Paths
 JDK_DIR=/opt/jdk/jdk1.6.0_18
-LUA_LIB_DIR=/opt/lua52
-LUA_INC_DIR=/opt/lua52/include
+LUA_LIB_DIR=/opt/lua/5.2/lib
+LUA_INC_DIR=/opt/lua/5.2/lib/include
 VERSION=52
 
 # Tools

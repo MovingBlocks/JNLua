@@ -36,7 +36,7 @@ static int error (lua_State *L, JNIEnv *env, const char *msg) {
 	throwable = (*env)->ExceptionOccurred(env);
 	if (throwable) {
 		throwable_class = (*env)->GetObjectClass(env, throwable);
-		if (tostring_id = (*env)->GetMethodID(env, throwable_class, "toString", "()Ljava/lang/String;")) {
+		if ((tostring_id = (*env)->GetMethodID(env, throwable_class, "toString", "()Ljava/lang/String;"))) {
 			string = (*env)->CallObjectMethod(env, throwable, tostring_id);
 			if (string) {
 				extramsg = (*env)->GetStringUTFChars(env, string, NULL);
