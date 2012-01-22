@@ -19,8 +19,8 @@
 typedef struct vm_rec {
 	JavaVM *vm;
 	jobject luastate;
-	JavaVMOption options[JAVAVM_MAXOPTIONS];
 	int num_options;
+	JavaVMOption options[JAVAVM_MAXOPTIONS];
 } vm_rec;
 
 /*
@@ -63,6 +63,7 @@ static int release_vm (lua_State *L) {
 	int res;
 	int i;
 	
+	/* Get VM */
 	vm = luaL_checkudata(L, 1, JAVAVM_METATABLE);
 	
 	/* Already released? */
@@ -79,7 +80,7 @@ static int release_vm (lua_State *L) {
 	if (vm->luastate) {
 		luastate_class = (*env)->GetObjectClass(env, vm->luastate);
 		if (!(close_id = (*env)->GetMethodID(env, luastate_class, "close", "()V"))) {
-			return error(L, env, "JNLua close method not found");
+			return error(L, env, "close method not found");
 		}
 		(*env)->CallVoidMethod(env, vm->luastate, close_id);
 		(*env)->DeleteGlobalRef(env, vm->luastate);
@@ -182,11 +183,11 @@ static int create_vm (lua_State *L) {
 		return error(L, env, "JNLua not found");
 	}
 	luastate = (*env)->NewObject(env, luastate_class, init_id, (jlong) (uintptr_t) L);
-	if (luastate == NULL) {
+	if (!luastate) {
 		return error(L, env, "error creating LuaState");
 	}
 	vm->luastate = (*env)->NewGlobalRef(env, luastate);
-	if (vm->luastate == NULL) {
+	if (!vm->luastate) {
 		return luaL_error(L, "error referencing LuaState");
 	}
 	

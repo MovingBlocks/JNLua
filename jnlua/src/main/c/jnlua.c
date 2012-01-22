@@ -52,7 +52,7 @@ static jbyteArray newbytearray(jsize length);
 static const char *getstringchars(jstring string);
 static void releasestringchars(jstring string, const char *chars);
 
-/* ---- Java object operations ---- */
+/* ---- Java state operations ---- */
 static lua_State *getstate(jobject javastate);
 static void setstate(jobject javastate, lua_State *L);
 static lua_State *getthread(jobject javastate);
@@ -296,54 +296,54 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1gc (JNIEnv *env, jobjec
 /* lua_openlib() */
 JNLUA_THREADLOCAL int openlib_lib;
 static int openlib_protected (lua_State *L) {
-	const char *libName;
-	lua_CFunction openFunc;
+	const char *libname;
+	lua_CFunction openfunc;
 	
 	switch (openlib_lib) {
 	case 0:
-		libName = "_G";
-		openFunc = luaopen_base;
+		libname = "_G";
+		openfunc = luaopen_base;
 		break;
 	case 1:
-		libName = LUA_LOADLIBNAME;
-		openFunc = luaopen_package;
+		libname = LUA_LOADLIBNAME;
+		openfunc = luaopen_package;
 		break;
 	case 2:
-		libName = LUA_COLIBNAME;
-		openFunc = luaopen_coroutine;
+		libname = LUA_COLIBNAME;
+		openfunc = luaopen_coroutine;
 		break;
 	case 3:
-		libName = LUA_TABLIBNAME;
-		openFunc = luaopen_table;
+		libname = LUA_TABLIBNAME;
+		openfunc = luaopen_table;
 		break;
 	case 4:
-		libName = LUA_IOLIBNAME;
-		openFunc = luaopen_io;
+		libname = LUA_IOLIBNAME;
+		openfunc = luaopen_io;
 		break;
 	case 5:
-		libName = LUA_OSLIBNAME;
-		openFunc = luaopen_os;
+		libname = LUA_OSLIBNAME;
+		openfunc = luaopen_os;
 		break;
 	case 6:
-		libName = LUA_STRLIBNAME;
-		openFunc = luaopen_string;
+		libname = LUA_STRLIBNAME;
+		openfunc = luaopen_string;
 		break;
 	case 7:
-		libName = LUA_BITLIBNAME;
-		openFunc = luaopen_bit32;
+		libname = LUA_BITLIBNAME;
+		openfunc = luaopen_bit32;
 		break;
 	case 8:
-		libName = LUA_MATHLIBNAME;
-		openFunc = luaopen_math;
+		libname = LUA_MATHLIBNAME;
+		openfunc = luaopen_math;
 		break;
 	case 9:
-		libName = LUA_DBLIBNAME;
-		openFunc = luaopen_debug;
+		libname = LUA_DBLIBNAME;
+		openfunc = luaopen_debug;
 		break;
 	default:
 		return 0;
 	}
-	luaL_requiref(L, libName, openFunc, 1);
+	luaL_requiref(L, libname, openfunc, 1);
 	return 1;
 }
 JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1openlib (JNIEnv *env, jobject obj, jint lib) {
@@ -1378,7 +1378,7 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1setfield (JNIEnv *env, 
 	}
 }
 
-/* ---- Meta table ---- */
+/* ---- Metatable ---- */
 /* lua_getmetatable() */
 JNIEXPORT int JNICALL Java_com_naef_jnlua_LuaState_lua_1getmetatable (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
@@ -1666,7 +1666,7 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1tablemove (JNIEnv *env,
 	}
 }
 
-/* ---- LuaDebug ---- */
+/* ---- Debug structure ---- */
 /* lua_debugfree() */
 JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_00024LuaDebug_lua_1debugfree (JNIEnv *env, jobject obj) {
 	lua_Debug *ar;
@@ -1715,9 +1715,6 @@ JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM *vm, void *reserved) {
 	if (!(luadebug_class = referenceclass(env, "com/naef/jnlua/LuaState$LuaDebug"))
 			|| !(luadebug_init_id = (*env)->GetMethodID(env, luadebug_class, "<init>", "(JZ)V"))
 			|| !(luadebug_field_id = (*env)->GetFieldID(env, luadebug_class, "luaDebug", "J"))) {
-		fprintf(stderr, "luadebug_class=%p\n", luadebug_class);
-		fprintf(stderr, "luadebug_init_id=%p\n", luadebug_init_id);
-		fprintf(stderr, "luadebug_field_id=%p\n", luadebug_field_id);
 		return JNLUA_JNIVERSION;
 	}
 	if (!(javafunction_interface = referenceclass(env, "com/naef/jnlua/JavaFunction"))
@@ -1899,7 +1896,7 @@ static void releasestringchars (jstring string, const char *chars) {
 	(*thread_env)->ReleaseStringUTFChars(thread_env, string, chars);
 }
 
-/* ---- Java object operations ---- */
+/* ---- Java state operations ---- */
 /* Returns the Lua state from the Java state. */
 static lua_State *getstate (jobject javastate) {
 	return (lua_State *) (uintptr_t) (*thread_env)->GetLongField(thread_env, javastate, luastate_id);
@@ -2146,6 +2143,10 @@ static int calljavafunction (lua_State *L) {
 	if (getyield(javastate)) {
 		if (nresults < 0 || nresults > lua_gettop(L)) {
 			lua_pushliteral(L, "illegal return count");
+			return lua_error(L);
+		}
+		if (L == getstate(javastate)) {
+			lua_pushliteral(L, "not in a thread");
 			return lua_error(L);
 		}
 		return lua_yield(L, nresults);

@@ -217,16 +217,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	}
 
 	/**
-	 * Call(int, int) with an illegal number of arguments.
-	 */
-	@Test(expected = IllegalArgumentException.class)
-	public void testIllegalCall1() {
-		luaState.openLibs();
-		luaState.getGlobal("print");
-		luaState.call(-1, 1);
-	}
-
-	/**
 	 * Call(int, int) with an extremely high number of returns.
 	 */
 	@Test(expected = IllegalStateException.class)
@@ -235,6 +225,16 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 		luaState.getGlobal("print");
 		luaState.pushString("");
 		luaState.call(1, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Call(int, int) with an illegal number of arguments.
+	 */
+	@Test(expected = IllegalArgumentException.class)
+	public void testIllegalCall1() {
+		luaState.openLibs();
+		luaState.getGlobal("print");
+		luaState.call(-1, 1);
 	}
 
 	/**
