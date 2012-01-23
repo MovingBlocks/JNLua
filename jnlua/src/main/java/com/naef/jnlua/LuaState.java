@@ -547,7 +547,7 @@ public class LuaState {
 			load(new ByteArrayInputStream(chunk.getBytes("UTF-8")), chunkName,
 					"t");
 		} catch (IOException e) {
-			throw new LuaMemoryAllocationException(e.getMessage());
+			throw new LuaMemoryAllocationException(e.getMessage(), e);
 		}
 	}
 
@@ -946,8 +946,8 @@ public class LuaState {
 	 * operator according to Lua semantics.
 	 * 
 	 * <p>
-	 * The stack index may be non-valid in case the <code>EQ</code> operator is
-	 * specified.
+	 * Any stack index may be non-valid in which case the method returns
+	 * <code>false</code>.
 	 * </p>
 	 * 
 	 * @param index1
@@ -1013,6 +1013,11 @@ public class LuaState {
 	/**
 	 * Bypassing metatable logic, returns whether the values at two specified
 	 * stack indexes are equal according to Lua semantics.
+	 * 
+	 * <p>
+	 * Any stack index may be non-valid in which case the method returns
+	 * <code>false</code>.
+	 * </p>
 	 * 
 	 * @param index1
 	 *            the first stack index
@@ -1597,7 +1602,6 @@ public class LuaState {
 	 * 
 	 * @param index
 	 *            the stack index containing the value to set the metatable for
-	 * @return whether the metatable was set
 	 */
 	public synchronized void setMetatable(int index) {
 		check();
@@ -2166,7 +2170,7 @@ public class LuaState {
 	 */
 	private LuaRuntimeException getArgException(int index, String extraMsg) {
 		check();
-		
+
 		// Get execution point
 		String name = null, nameWhat = null;
 		LuaDebug luaDebug = lua_getstack(0);
@@ -2175,12 +2179,12 @@ public class LuaState {
 			name = luaDebug.getName();
 			nameWhat = luaDebug.getNameWhat();
 		}
-		
+
 		// Adjust for methods
 		if ("method".equals(nameWhat)) {
 			index--;
 		}
-		
+
 		// Format message
 		String msg;
 		String argument = index > 0 ? String.format("argument #%d", index)

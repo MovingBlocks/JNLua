@@ -13,6 +13,8 @@ that implements the interface.
 
 - Changed the absIndex method in LuaState to accept non-valid indexes.
 
+- Changed the rawEqual method to return false on non-valid indexes.
+
 - Changed the setMetatable method in LuaState to no longer return a value,
 adapting to the Lua 5.2 API.
 

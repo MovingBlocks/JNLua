@@ -837,6 +837,8 @@ public class LuaStateTest extends AbstractLuaTest {
 			}
 		}
 		assertFalse(luaState.compare(20, 21, RelOperator.EQ));
+		assertFalse(luaState.compare(1, 21, RelOperator.EQ));
+		assertFalse(luaState.compare(20, 1, RelOperator.EQ));
 
 		// Finish
 		luaState.pop(13);
@@ -890,6 +892,9 @@ public class LuaStateTest extends AbstractLuaTest {
 				}
 			}
 		}
+		assertFalse(luaState.rawEqual(20, 21));
+		assertFalse(luaState.rawEqual(1, 21));
+		assertFalse(luaState.rawEqual(20, 1));
 
 		// Finish
 		luaState.pop(10);

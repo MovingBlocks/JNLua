@@ -340,14 +340,6 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	}
 
 	/**
-	 * rawEqual(int, int) with illegal indexes.
-	 */
-	@Test(expected = IllegalArgumentException.class)
-	public void testIllegalRawEqual() {
-		luaState.rawEqual(getIllegalIndex(), getIllegalIndex());
-	}
-
-	/**
 	 * rawLen(int) with illegal index.
 	 */
 	@Test(expected = IllegalArgumentException.class)

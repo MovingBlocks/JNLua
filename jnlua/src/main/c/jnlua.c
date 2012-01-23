@@ -776,15 +776,13 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1compare (JNIEnv *env, j
 /* lua_rawequal() */
 JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1rawequal (JNIEnv *env, jobject obj, jint index1, jint index2) {
 	lua_State *L;
-	int result = 0;
 	
 	JNLUA_ENV(env);
 	L = getluathread(obj);
-	if (checkindex(L, index1) 
-			&& checkindex(L, index2)) {
-		result = lua_rawequal(L, index1, index2);
+	if (!validindex(L, index1) || !validindex(L, index2)) {
+		return (jint) 0;
 	}
-	return (jint) result;
+	return (jint) lua_rawequal(L, index1, index2);
 }
 
 /* lua_rawlen() */
