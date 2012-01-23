@@ -3,6 +3,17 @@
  * Provides the Java VM module. See LICENSE.txt for license terms.
  */
 
+#include <stdlib.h>
+#include <string.h>
+#include <jni.h>
+#include <lauxlib.h>
+#ifdef LUA_WIN
+#include <stddef.h>
+#pragma warning(disable : 4996)
+#endif
+#ifdef LUA_USE_POSIX
+#include <stdint.h>
+#endif
 #include "javavm.h"
 
 /*
