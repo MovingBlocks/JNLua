@@ -3,7 +3,7 @@ README for JNlua
 For information about JNLua, please visit http://code.google.com/p/jnlua/.
 
 
-* Release 1.0.2
+* Release 1.0.2 (2012-01-29)
 
 - Added toIntegerX and toNumberX methods to LuaState.
 
