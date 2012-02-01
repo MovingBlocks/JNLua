@@ -53,8 +53,8 @@ class LuaError {
 		if (message != null) {
 			sb.append(message);
 		}
-		if (cause != null && cause.getMessage() != null) {
-			sb.append(cause.getMessage());
+		if (cause != null) {
+			sb.append(cause);
 		}
 		return sb.toString();
 	}
