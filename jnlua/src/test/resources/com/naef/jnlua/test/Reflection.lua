@@ -43,6 +43,8 @@ function testTypes ()
 	assert(testObject.booleanField)
 	testObject.byteField = 1
 	assert(testObject.byteField == 1)
+	testObject.byteArrayField = "test"
+	assert(testObject.byteArrayField == "test")
 	testObject.shortField = 1
 	assert(testObject.shortField == 1)
 	testObject.intField = 1
@@ -71,17 +73,17 @@ function testMeta ()
 	local testObject2 = TestObject:new(2)
 	
 	-- __index
-	local byte = java.require("byte")
-	local byteArray = java.new(byte, 2)
-	assert(byteArray[1] == 0)
-	assert(byteArray[2] == 0)
+	local int = java.require("int")
+	local intArray = java.new(int, 2)
+	assert(intArray[1] == 0)
+	assert(intArray[2] == 0)
 		
 	-- __newindex
-	byteArray[1] = 1
-	assert(byteArray[1] == 1)
+	intArray[1] = 1
+	assert(intArray[1] == 1)
 	
 	-- __len
-	assert(#byteArray == 2)
+	assert(#intArray == 2)
 	
 	-- __eq
 	assert(testObject1 ~= testObject2)
@@ -115,7 +117,7 @@ function testMeta ()
 	
 	-- ipairs
 	cnt = 0
-	for i, j in ipairs(byteArray) do
+	for i, j in ipairs(intArray) do
 		cnt = cnt + 1
 	end
 	assert(cnt == 2)

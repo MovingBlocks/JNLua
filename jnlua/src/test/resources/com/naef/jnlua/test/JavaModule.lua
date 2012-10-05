@@ -128,7 +128,7 @@ function testIPairs ()
 	assert(sum == 55)
 	
 	-- Create array
-	local array = java.new("byte", 10)
+	local array = java.new("int", 10)
 	for i = 1, 10 do
 		array[i] = i
 	end
@@ -210,7 +210,7 @@ function testFields()
 		fields[k] = v
 	end
 	assert(fields["testField"])
-	assert(count == 12)
+	assert(count == 13)
 end
 
 -- java.methods

@@ -494,6 +494,30 @@ JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1pushboolean (JNIEnv *en
 	}
 }
 
+/* lua_pushbytearray() */
+JNLUA_THREADLOCAL jbyte *pushbytearray_b;
+JNLUA_THREADLOCAL jsize pushbytearray_length;
+static int pushbytearray_protected (lua_State *L) {
+	lua_pushlstring(L, pushbytearray_b, pushbytearray_length);
+	return 1;
+}
+JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1pushbytearray (JNIEnv *env, jobject obj, jbyteArray ba) {
+	lua_State *L;
+	
+	pushbytearray_b = NULL;
+	JNLUA_ENV(env);
+	L = getluathread(obj);
+	if (checkstack(L, JNLUA_MINSTACK)
+			&& (pushbytearray_b = (*env)->GetByteArrayElements(env, ba, NULL))) {
+		pushbytearray_length = (*env)->GetArrayLength(env, ba);
+		lua_pushcfunction(L, pushbytearray_protected);
+		JNLUA_PCALL(L, 0, 1);
+	}
+	if (pushbytearray_b) {
+		(*env)->ReleaseByteArrayElements(env, ba, pushbytearray_b, JNI_ABORT);
+	}
+}
+
 /* lua_pushinteger() */
 JNIEXPORT void JNICALL Java_com_naef_jnlua_LuaState_lua_1pushinteger (JNIEnv *env, jobject obj, jint n) {
 	lua_State *L;
@@ -808,6 +832,44 @@ JNIEXPORT jint JNICALL Java_com_naef_jnlua_LuaState_lua_1toboolean (JNIEnv *env,
 		return 0;
 	}
 	return lua_toboolean(L, index);
+}
+
+/* lua_tobytearray() */
+JNLUA_THREADLOCAL const char *tobytearray_result;
+JNLUA_THREADLOCAL size_t tobytearray_length;
+static int tobytearray_protected (lua_State *L) {
+	tobytearray_result = lua_tolstring(L, 1, &tobytearray_length);
+	return 0;
+}
+JNIEXPORT jbyteArray JNICALL Java_com_naef_jnlua_LuaState_lua_1tobytearray (JNIEnv *env, jobject obj, jint index) {
+	lua_State *L;
+	jbyteArray ba;
+	jbyte *b;
+
+	tobytearray_result = NULL;
+	JNLUA_ENV(env);
+	L = getluathread(obj);
+	if (checkstack(L, JNLUA_MINSTACK)
+			&& checkindex(L, index)) {
+		index = lua_absindex(L, index);
+		lua_pushcfunction(L, tobytearray_protected);
+		lua_pushvalue(L, index);
+		JNLUA_PCALL(L, 1, 0);
+	}
+	if (!tobytearray_result) {
+		return NULL;
+	}
+	ba = (*env)->NewByteArray(env, (jsize) tobytearray_length);
+	if (!ba) {
+		return NULL;
+	}
+	b = (*env)->GetByteArrayElements(env, ba, NULL);
+	if (!b) {
+		return NULL;
+	}
+	memcpy(b, tobytearray_result, tobytearray_length);
+	(*env)->ReleaseByteArrayElements(env, ba, b, 0);
+	return ba;
 }
 
 /* lua_tointeger() */

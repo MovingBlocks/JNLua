@@ -23,6 +23,7 @@ public class TestObject implements Comparable<TestObject> {
 	 */
 	public boolean booleanField;
 	public byte byteField;
+	public byte[] byteArrayField;
 	public short shortField;
 	public int intField;
 	public long longField;

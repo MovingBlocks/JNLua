@@ -58,6 +58,7 @@ public class DefaultConverter implements Converter {
 		NUMBER_DISTANCE_MAP.put(Character.TYPE, new Integer(1));
 		NUMBER_DISTANCE_MAP.put(Object.class, new Integer(2));
 		NUMBER_DISTANCE_MAP.put(String.class, new Integer(3));
+		NUMBER_DISTANCE_MAP.put(byte[].class, new Integer(3));
 	}
 
 	/**
@@ -66,6 +67,7 @@ public class DefaultConverter implements Converter {
 	private static final Map<Class<?>, Integer> STRING_DISTANCE_MAP = new HashMap<Class<?>, Integer>();
 	static {
 		STRING_DISTANCE_MAP.put(String.class, new Integer(1));
+		STRING_DISTANCE_MAP.put(byte[].class, new Integer(1));
 		STRING_DISTANCE_MAP.put(Object.class, new Integer(2));
 		STRING_DISTANCE_MAP.put(Byte.class, new Integer(3));
 		STRING_DISTANCE_MAP.put(Byte.TYPE, new Integer(3));
@@ -186,6 +188,13 @@ public class DefaultConverter implements Converter {
 			}
 		};
 		LUA_VALUE_CONVERTERS.put(String.class, stringConverter);
+		LuaValueConverter<byte[]> byteArrayConverter = new LuaValueConverter<byte[]>() {
+			@Override
+			public byte[] convert(LuaState luaState, int index) {
+				return luaState.toByteArray(index);
+			}
+		};
+		LUA_VALUE_CONVERTERS.put(byte[].class, byteArrayConverter);
 	}
 
 	/**
@@ -236,6 +245,13 @@ public class DefaultConverter implements Converter {
 			}
 		};
 		JAVA_OBJECT_CONVERTERS.put(String.class, stringConverter);
+		JavaObjectConverter<byte[]> byteArrayConverter = new JavaObjectConverter<byte[]>() {
+			@Override
+			public void convert(LuaState luaState, byte[] byteArray) {
+				luaState.pushByteArray(byteArray);
+			}
+		};
+		JAVA_OBJECT_CONVERTERS.put(byte[].class, byteArrayConverter);
 	}
 
 	// -- Static methods

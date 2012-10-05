@@ -18,15 +18,13 @@ MTFLAGS=-nologo
 all: jnlua$(VERSION).dll javavm.dll
 
 jnlua$(VERSION).dll: jnlua.obj
-	$(LD) $(LDFLAGS) /OUT:jnlua$(VERSION).dll /LIBPATH:"$(LUA_DIR)" lua$(LUA_VERSION).lib jnlua.obj
-	$(MT) $(MTFLAGS) -outputresource:jnlua$(VERSION).dll;2 -manifest jnlua$(VERSION).dll.manifest 
+	$(LD) $(LDFLAGS) /OUT:jnlua$(VERSION).dll /LIBPATH:"$(LUA_DIR)" jnlua.obj lua$(LUA_VERSION).lib
 
 jnlua.obj: ..\jnlua.c
 	$(CC) $(CFLAGS) /MD /DLUA_BUILD_AS_DLL /I"$(JDK_DIR)\include" /I"$(JDK_DIR)\include\win32" /I"$(LUA_DIR)\include" ..\jnlua.c
 
 javavm.dll: javavm.obj
-	$(LD) $(LDFLAGS) /OUT:javavm.dll /LIBPATH:"$(LUA_DIR)" /LIBPATH:"$(JDK_DIR)\lib" lua$(LUA_VERSION).lib jvm.lib javavm.obj
-	$(MT) $(MTFLAGS) -outputresource:javavm.dll;2 -manifest javavm.dll.manifest 
+	$(LD) $(LDFLAGS) /OUT:javavm.dll /LIBPATH:"$(LUA_DIR)" /LIBPATH:"$(JDK_DIR)\lib" javavm.obj lua$(LUA_VERSION).lib jvm.lib
 
 javavm.obj: ..\javavm.c ..\javavm.h
 	$(CC) $(CFLAGS) /MD /DLUA_BUILD_AS_DLL /DLUA_LIB /I"$(JDK_DIR)\include" /I"$(JDK_DIR)\include\win32" /I"$(LUA_DIR)\include" ..\javavm.c

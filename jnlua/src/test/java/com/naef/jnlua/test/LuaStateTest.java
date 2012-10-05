@@ -357,6 +357,20 @@ public class LuaStateTest extends AbstractLuaTest {
 	}
 
 	/**
+	 * Tests the pushByteArray method.
+	 */
+	@Test
+	public void testPushByteArray() throws Exception {
+		luaState.pushByteArray(new byte[2]);
+		assertEquals(LuaType.STRING, luaState.type(1));
+		assertArrayEquals(new byte[] { 0, 0 }, luaState.toByteArray(1));
+		luaState.pop(1);
+
+		// Finish
+		assertEquals(0, luaState.getTop());
+	}
+
+	/**
 	 * Tests the stack push methods.
 	 */
 	@Test
@@ -923,6 +937,33 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertTrue(luaState.toBoolean(10));
 		assertFalse(luaState.toBoolean(-100));
 		assertFalse(luaState.toBoolean(100));
+
+		// Finish
+		luaState.pop(10);
+		assertEquals(0, luaState.getTop());
+	}
+
+	/**
+	 * Tests the toByteArray method.
+	 */
+	@Test
+	public void testToByteArray() throws Exception {
+		// Setup stack
+		luaState.openLibs();
+		makeStack();
+
+		// Test
+		assertNull(luaState.toByteArray(1));
+		assertNull(luaState.toByteArray(2));
+		assertArrayEquals(new byte[] { '1' }, luaState.toByteArray(3));
+		assertArrayEquals(new byte[] { 't', 'e', 's', 't' },
+				luaState.toByteArray(4));
+		assertArrayEquals(new byte[] { '1' }, luaState.toByteArray(5));
+		assertNull(luaState.toString(6));
+		assertNull(luaState.toString(7));
+		assertNull(luaState.toString(8));
+		assertNull(luaState.toString(9));
+		assertNull(luaState.toString(10));
 
 		// Finish
 		luaState.pop(10);
@@ -1630,6 +1671,21 @@ public class LuaStateTest extends AbstractLuaTest {
 	}
 
 	/**
+	 * Tests the checkByteArray methods.
+	 */
+	@Test
+	public void testCheckByteArray() {
+		luaState.pushString("test");
+		assertArrayEquals(new byte[] { 't', 'e', 's', 't' },
+				luaState.checkByteArray(1));
+		assertArrayEquals(new byte[1], luaState.checkByteArray(2, new byte[1]));
+
+		// Cleanup
+		luaState.pop(1);
+		assertEquals(0, luaState.getTop());
+	}
+
+	/**
 	 * Tests the checkEnum methods.
 	 */
 	@Test
@@ -1752,7 +1808,8 @@ public class LuaStateTest extends AbstractLuaTest {
 			luaRuntimeException = e;
 		}
 		assertNotNull(luaRuntimeException);
-		assertEquals("testCheckMessageFunction:1: bad argument #3 to 'f' (msg)",
+		assertEquals(
+				"testCheckMessageFunction:1: com.naef.jnlua.LuaRuntimeException: bad argument #3 to 'f' (msg)",
 				luaRuntimeException.getMessage());
 
 		// Method name
@@ -1764,7 +1821,8 @@ public class LuaStateTest extends AbstractLuaTest {
 			luaRuntimeException = e;
 		}
 		assertNotNull(luaRuntimeException);
-		assertEquals("testCheckMessageMethod:1: bad argument #2 to 'm' (msg)",
+		assertEquals(
+				"testCheckMessageMethod:1: com.naef.jnlua.LuaRuntimeException: bad argument #2 to 'm' (msg)",
 				luaRuntimeException.getMessage());
 	}
 
