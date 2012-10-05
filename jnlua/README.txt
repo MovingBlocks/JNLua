@@ -3,6 +3,13 @@ README for JNlua
 For information about JNLua, please visit http://code.google.com/p/jnlua/.
 
 
+* Release 1.0.3
+
+- Added transparent conversion between Lua strings and Java byte arrays.
+This may break existing code that passes byte arrays from Java to Lua, or calls
+Java methods with signatures expecting a byte array from Lua.
+
+ 
 * Release 1.0.2 (2012-01-29)
 
 - Added toIntegerX and toNumberX methods to LuaState.
