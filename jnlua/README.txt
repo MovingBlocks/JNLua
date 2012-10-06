@@ -6,8 +6,12 @@ For information about JNLua, please visit http://code.google.com/p/jnlua/.
 * Release 1.0.3
 
 - Added transparent conversion between Lua strings and Java byte arrays.
-This may break existing code that passes byte arrays from Java to Lua, or calls
-Java methods with signatures expecting a byte array from Lua.
+This may break existing code that passes byte arrays between Java and Lua.
+A compatibility property, com.naef.jnlua.rawByteArray=true, has been provided.
+
+- Fixed an issue where method dispatch would incorrectly fail on public
+methods found on non-public classes with public superclasses. Thanks
+Ignazio Di Napoli for the analysis.
 
  
 * Release 1.0.2 (2012-01-29)

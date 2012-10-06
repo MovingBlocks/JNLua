@@ -162,10 +162,10 @@ public class DefaultJavaReflector implements JavaReflector {
 				continue;
 			}
 
-			// Find the method in an interface if the declaring class is not
-			// public
+			// Attempt to find the method in a public class if the declaring
+			// class is not public
 			if (!Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
-				method = getInterfaceMethod(clazz, method.getName(),
+				method = getPublicClassMethod(clazz, method.getName(),
 						method.getParameterTypes());
 				if (method == null) {
 					continue;
@@ -188,7 +188,6 @@ public class DefaultJavaReflector implements JavaReflector {
 							currentInvocable.getDeclaringClass())) {
 				continue;
 			}
-
 			overloaded.put(parameterTypes, new InvocableMethod(method));
 		}
 		for (Map.Entry<String, Map<List<Class<?>>, Invocable>> entry : accessibleMethods
@@ -233,13 +232,13 @@ public class DefaultJavaReflector implements JavaReflector {
 				continue;
 			}
 
-			// Find the read/write methods in an interface if the declaring
-			// class is not public
+			// Attempt to find the read/write methods in a public class if the
+			// declaring class is not public
 			Method method = propertyDescriptors[i].getReadMethod();
 			if (method != null
 					&& !Modifier.isPublic(method.getDeclaringClass()
 							.getModifiers())) {
-				method = getInterfaceMethod(clazz, method.getName(),
+				method = getPublicClassMethod(clazz, method.getName(),
 						method.getParameterTypes());
 				try {
 					propertyDescriptors[i].setReadMethod(method);
@@ -250,7 +249,7 @@ public class DefaultJavaReflector implements JavaReflector {
 			if (method != null
 					&& !Modifier.isPublic(method.getDeclaringClass()
 							.getModifiers())) {
-				method = getInterfaceMethod(clazz, method.getName(),
+				method = getPublicClassMethod(clazz, method.getName(),
 						method.getParameterTypes());
 				try {
 					propertyDescriptors[i].setWriteMethod(method);
@@ -267,6 +266,52 @@ public class DefaultJavaReflector implements JavaReflector {
 					clazz, propertyDescriptors[i]));
 		}
 		return result;
+	}
+
+	/**
+	 * Returns a public class method matching a method name and parameter list.
+	 * The public class can be a superclass or interface.
+	 */
+	private Method getPublicClassMethod(Class<?> clazz, String methodName,
+			Class<?>[] parameterTypes) {
+		Method method = getPublicSuperclassMethod(clazz, methodName,
+				parameterTypes);
+		if (method != null) {
+			return method;
+		}
+		return getInterfaceMethod(clazz, methodName, parameterTypes);
+	}
+
+	/**
+	 * Returns a public superclass method matching a method name and parameter
+	 * list.
+	 */
+	private Method getPublicSuperclassMethod(Class<?> clazz, String methodName,
+			Class<?>[] parameterTypes) {
+		Class<?> superclass = clazz.getSuperclass();
+		while (superclass != null) {
+			// Ignore non-public superclasses
+			if (!Modifier.isPublic(superclass.getModifiers())) {
+				continue;
+			}
+
+			// Find method in superclass
+			try {
+				Method method = superclass.getDeclaredMethod(methodName,
+						parameterTypes);
+				if (Modifier.isPublic(method.getModifiers())) {
+					return method;
+				}
+			} catch (NoSuchMethodException e) {
+				// Not found
+			}
+
+			// Check superclass
+			superclass = superclass.getSuperclass();
+		}
+
+		// Not found
+		return null;
 	}
 
 	/**
