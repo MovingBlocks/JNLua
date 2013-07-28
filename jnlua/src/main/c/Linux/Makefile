@@ -1,8 +1,8 @@
 # Paths
-JDK_DIR=/opt/jdk/jdk1.6.0_18
-LUA_LIB_DIR=/opt/lua/5.2/lib
-LUA_INC_DIR=/opt/lua/5.2/lib/include
-LUA_VERSION=52
+JDK_DIR=/usr/lib/jvm/java-6-openjdk-i386
+LUA_LIB_DIR=/usr/lib
+LUA_INC_DIR=/usr/include/lua5.2
+LUA_VERSION=5.2
 VERSION=52
 ARCH=amd64
 
