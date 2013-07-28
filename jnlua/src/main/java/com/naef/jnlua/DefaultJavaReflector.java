@@ -290,20 +290,18 @@ public class DefaultJavaReflector implements JavaReflector {
 			Class<?>[] parameterTypes) {
 		Class<?> superclass = clazz.getSuperclass();
 		while (superclass != null) {
-			// Ignore non-public superclasses
-			if (!Modifier.isPublic(superclass.getModifiers())) {
-				continue;
-			}
-
-			// Find method in superclass
-			try {
-				Method method = superclass.getDeclaredMethod(methodName,
-						parameterTypes);
-				if (Modifier.isPublic(method.getModifiers())) {
-					return method;
+			// Process public superclasses only
+			if (Modifier.isPublic(superclass.getModifiers())) {
+				// Find method in superclass
+				try {
+					Method method = superclass.getDeclaredMethod(methodName,
+							parameterTypes);
+					if (Modifier.isPublic(method.getModifiers())) {
+						return method;
+					}
+				} catch (NoSuchMethodException e) {
+					// Not found
 				}
-			} catch (NoSuchMethodException e) {
-				// Not found
 			}
 
 			// Check superclass

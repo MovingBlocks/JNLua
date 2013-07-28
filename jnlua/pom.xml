@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.naef</groupId>
 	<artifactId>jnlua</artifactId>
-	<version>1.0.3</version>
+	<version>1.0.4</version>
 	<packaging>jar</packaging>
 	<name>JNLua</name>
 	<description>Java Native Lua</description>
