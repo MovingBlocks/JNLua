@@ -444,7 +444,13 @@ public class DefaultConverter implements Converter {
 				return (T) luaValueConverter.convert(luaState, index);
 			}
 			if (formalType == Object.class) {
-				return (T) luaState.toString(index);
+				final byte[] result = luaState.toByteArray(index);
+				final String string = new String(result, luaState.getCharset());
+				if (string.getBytes(luaState.getCharset()).length != result.length) {
+					return (T) result;
+				} else {
+					return (T) string;
+				}
 			}
 			break;
 		case TABLE:
