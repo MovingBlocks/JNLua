@@ -590,30 +590,6 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushnumber (JNIEn
 	}
 }
 
-/* lua_pushstring() */
-JNLUA_THREADLOCAL const char *pushstring_s;
-JNLUA_THREADLOCAL jsize pushstring_length;
-static int pushstring_protected (lua_State *L) {
-	lua_pushlstring(L, pushstring_s, pushstring_length);
-	return 1;
-}
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushstring (JNIEnv *env, jobject obj, jstring s) {
-	lua_State *L;
-	
-	pushstring_s = NULL;
-	JNLUA_ENV(env);
-	L = getluathread(obj);
-	if (checkstack(L, JNLUA_MINSTACK)
-			&& (pushstring_s = getstringchars(s))) {
-		pushstring_length = (*env)->GetStringUTFLength(env, s);
-		lua_pushcfunction(L, pushstring_protected);
-		JNLUA_PCALL(L, 0, 1);
-	}
-	if (pushstring_s) {
-		releasestringchars(s, pushstring_s);
-	}
-}
-
 /* ---- Stack type test ---- */
 /* lua_isboolean() */
 JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isboolean (JNIEnv *env, jobject obj, jint index) {
@@ -984,28 +960,6 @@ JNIEXPORT jlong JNICALL Java_org_terasology_jnlua_LuaState_lua_1topointer (JNIEn
 		result = lua_topointer(L, index);
 	}
 	return (jlong) (uintptr_t) result;
-}
-
-/* lua_tostring() */
-JNLUA_THREADLOCAL const char *tostring_result;
-static int tostring_protected (lua_State *L) {
-	tostring_result = lua_tostring(L, 1);
-	return 0;
-}
-JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_lua_1tostring (JNIEnv *env, jobject obj, jint index) {
-	lua_State *L;
-
-	tostring_result = NULL;
-	JNLUA_ENV(env);
-	L = getluathread(obj);
-	if (checkstack(L, JNLUA_MINSTACK)
-			&& checkindex(L, index)) {
-		index = lua_absindex(L, index);
-		lua_pushcfunction(L, tostring_protected);
-		lua_pushvalue(L, index);
-		JNLUA_PCALL(L, 1, 0);
-	}
-	return tostring_result ? (*env)->NewStringUTF(env, tostring_result) : NULL;
 }
 
 /* lua_type() */

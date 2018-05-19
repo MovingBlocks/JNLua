@@ -31,6 +31,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -156,6 +157,12 @@ public class LuaState {
 	 */
 	private static final int APIVERSION = 3;
 
+	/**
+	 * The character set used by the Lua-Java string conversion.
+	 */
+	private Charset characterSet;
+
+
 	// -- State
 	/**
 	 * Whether the <code>lua_State</code> on the JNI side is owned by the Java
@@ -234,6 +241,8 @@ public class LuaState {
 	 * Creates a new instance.
 	 */
 	private LuaState(long luaState) {
+		characterSet = Charset.forName("UTF-8");
+
 		ownState = luaState == 0L;
 		lua_newstate(APIVERSION, luaState);
 		check();
@@ -364,6 +373,27 @@ public class LuaState {
 			}
 		}
 		return javaReflector.getMetamethod(metamethod);
+	}
+
+	/**
+	 * Returns the charset used for string conversion by this Lua state.
+	 *
+	 * @return the charset
+	 */
+	public synchronized Charset getCharset() {
+		return characterSet;
+	}
+
+	/**
+	 * Sets the charset used for string conversion by this Lua state.
+	 *
+	 * @param charset the charset
+	 */
+	public synchronized void setCharset(Charset charset) {
+		if (charset == null) {
+			throw new NullPointerException();
+		}
+		this.characterSet = charset;
 	}
 
 	/**
@@ -735,7 +765,7 @@ public class LuaState {
 	 */
 	public synchronized void pushString(String s) {
 		check();
-		lua_pushstring(s);
+		lua_pushbytearray(s.getBytes(characterSet));
 	}
 
 	// -- Stack type test
@@ -1241,7 +1271,12 @@ public class LuaState {
 	 */
 	public synchronized String toString(int index) {
 		check();
-		return lua_tostring(index);
+		byte[] bytes = lua_tobytearray(index);
+		if (bytes != null) {
+			return new String(bytes, characterSet);
+		} else {
+			return null;
+		}
 	}
 
 	/**
@@ -2316,8 +2351,6 @@ public class LuaState {
 
 	private native void lua_pushnumber(double n);
 
-	private native void lua_pushstring(String s);
-
 	private native int lua_isboolean(int index);
 
 	private native int lua_iscfunction(int index);
@@ -2365,8 +2398,6 @@ public class LuaState {
 	private native Double lua_tonumberx(int index);
 
 	private native long lua_topointer(int index);
-
-	private native String lua_tostring(int index);
 
 	private native int lua_type(int index);
 
