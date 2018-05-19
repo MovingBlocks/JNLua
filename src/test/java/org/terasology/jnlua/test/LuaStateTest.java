@@ -79,22 +79,6 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals(0, luaState.getTop());
 	}
 
-	/**
-	 * Tests the version.
-	 */
-	@Test
-	public void testVersion() {
-		assertEquals("1.0", LuaState.VERSION);
-	}
-
-	/**
-	 * Tests the Lua version.
-	 */
-	@Test
-	public void testLuaVersion() {
-		assertEquals("5.2", LuaState.LUA_VERSION);
-	}
-
 	// -- Property tests
 	/**
 	 * Tests the classLoader property.
@@ -1306,6 +1290,8 @@ public class LuaStateTest extends AbstractLuaTest {
 		testArith(17, Integer.valueOf(5), ArithOperator.MOD, 2);
 		testArith(3, Integer.valueOf(2), ArithOperator.POW, 9);
 		testArith(7, null, ArithOperator.UNM, -7);
+
+		// TODO: Add Lua 5.3 operator tests
 
 		// Finish
 		assertEquals(0, luaState.getTop());

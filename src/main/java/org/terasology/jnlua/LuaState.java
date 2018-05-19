@@ -1371,7 +1371,7 @@ public class LuaState {
 	 */
 	public synchronized void arith(ArithOperator operator) {
 		check();
-		lua_arith(operator.ordinal());
+		lua_arith(operator.getValue());
 	}
 
 	/**
@@ -2661,37 +2661,90 @@ public class LuaState {
 		/**
 		 * Addition operator.
 		 */
-		ADD,
+		ADD(0, 0),
 
 		/**
 		 * Subtraction operator.
 		 */
-		SUB,
+		SUB(1, 1),
 
 		/**
 		 * Multiplication operator.
 		 */
-		MUL,
+		MUL(2, 2),
 
 		/**
 		 * Division operator.
 		 */
-		DIV,
+		DIV(3, 5),
 
 		/**
 		 * Modulo operator.
 		 */
-		MOD,
+		MOD(4, 3),
 
 		/**
 		 * Exponentiation operator.
 		 */
-		POW,
+		POW(5, 4),
 
 		/**
 		 * Mathematical negation operator.
 		 */
-		UNM
+		UNM(6, 12),
+
+		/**
+		 * Integer division operator.
+		 */
+		IDIV(3, 6),
+
+		/**
+		 * Binary AND operator.
+		 */
+		BAND(-1, 7),
+
+		/**
+		 * Binary OR operator.
+		 */
+		BOR(-1, 8),
+
+		/**
+		 * Binary XOR operator.
+		 */
+		BXOR(-1, 9),
+
+		/**
+		 * Shift left operator.
+		 */
+		SHL(-1, 10),
+
+		/**
+		 * Shift right operator.
+		 */
+		SHR(-1, 11),
+
+		/**
+		 * Binary negation operator.
+		 */
+		BNOT(-1, 13);
+
+		final int lua52value;
+		final int lua53value;
+
+		ArithOperator(int lua52value, int lua53value) {
+			this.lua52value = lua52value;
+			this.lua53value = lua53value;
+		}
+
+		public int getValue() {
+			switch (LUA_VERSION) {
+				case "5.3":
+				default:
+					return lua53value;
+				case "5.2":
+					return lua52value;
+			}
+		}
 	}
 
 	/**

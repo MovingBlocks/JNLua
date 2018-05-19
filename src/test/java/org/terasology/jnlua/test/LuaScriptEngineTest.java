@@ -88,9 +88,6 @@ public class LuaScriptEngineTest {
 		// getEngineName()
 		assertEquals("JNLua", factory.getEngineName());
 
-		// getEngineVersion()
-		assertEquals("1.0", factory.getEngineVersion());
-
 		// getNames()
 		List<String> names = factory.getNames();
 		assertTrue(names.contains("lua"));
@@ -100,9 +97,6 @@ public class LuaScriptEngineTest {
 
 		// getLanguageName()
 		assertEquals("Lua", factory.getLanguageName());
-
-		// getLanguageVersion()
-		assertEquals("5.2", factory.getLanguageVersion());
 
 		// getExtensions()
 		List<String> extensions = factory.getExtensions();
