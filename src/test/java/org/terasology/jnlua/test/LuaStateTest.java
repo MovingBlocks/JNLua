@@ -177,8 +177,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		assertEquals(0, luaState.gc(GcAction.STEP, 0));
 		assertTrue(luaState.gc(GcAction.SETPAUSE, 200) > 0);
 		assertTrue(luaState.gc(GcAction.SETSTEPMUL, 200) > 0);
-		assertEquals(0, luaState.gc(GcAction.GEN, 0));
-		assertEquals(0, luaState.gc(GcAction.INC, 0));
+		// Do not test GC modes, as they were experimental in Lua 5.2 and deprecated in Lua 5.3.
 	}
 
 	/**
@@ -956,7 +955,11 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Test
 		assertNull(luaState.toByteArray(1));
 		assertNull(luaState.toByteArray(2));
-		assertArrayEquals(new byte[] { '1' }, luaState.toByteArray(3));
+		if (LuaState.LUA_VERSION_NUM >= 503) {
+			assertArrayEquals(new byte[]{'1', '.', '0'}, luaState.toByteArray(3));
+		} else {
+			assertArrayEquals(new byte[]{'1'}, luaState.toByteArray(3));
+		}
 		assertArrayEquals(new byte[] { 't', 'e', 's', 't' },
 				luaState.toByteArray(4));
 		assertArrayEquals(new byte[] { '1' }, luaState.toByteArray(5));
@@ -1193,7 +1196,11 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Test
 		assertNull(luaState.toString(1));
 		assertNull(luaState.toString(2));
-		assertEquals("1", luaState.toString(3));
+		if (LuaState.LUA_VERSION_NUM >= 503) {
+			assertEquals("1.0", luaState.toString(3));
+		} else {
+			assertEquals("1", luaState.toString(3));
+		}
 		assertEquals("test", luaState.toString(4));
 		assertEquals("1", luaState.toString(5));
 		assertNull(luaState.toString(6));

@@ -146,10 +146,16 @@ public class LuaState {
 	 */
 	public static final String LUA_VERSION;
 
+	/**
+	 * The Lua version number. The format is &lt;major&gt; * 100 + &lt;minor&gt;.
+	 */
+	public static final int LUA_VERSION_NUM;
+
 	static {
 		NativeSupport.getInstance().getLoader().load();
 		REGISTRYINDEX = lua_registryindex();
 		LUA_VERSION = lua_version();
+		LUA_VERSION_NUM = lua_versionnum();
 	}
 
 	/**
@@ -464,7 +470,11 @@ public class LuaState {
 	 */
 	public synchronized int gc(GcAction what, int data) {
 		check();
-		return lua_gc(what.ordinal(), data);
+		int value = what.getValue();
+		if (value < 0) {
+			throw new IllegalArgumentException("Invalid GC action " + what.name());
+		}
+		return lua_gc(value, data);
 	}
 
 	// -- Registration
@@ -1371,7 +1381,11 @@ public class LuaState {
 	 */
 	public synchronized void arith(ArithOperator operator) {
 		check();
-		lua_arith(operator.getValue());
+		int value = operator.getValue();
+		if (value < 0) {
+			throw new IllegalArgumentException("Invalid arithmetic operator " + operator.name());
+		}
+		lua_arith(value);
 	}
 
 	/**
@@ -2327,6 +2341,8 @@ public class LuaState {
 
 	private static native String lua_version();
 
+	private static native int lua_versionnum();
+
 	private native void lua_newstate(int apiversion, long luaState);
 
 	private native void lua_close(boolean ownState);
@@ -2585,70 +2601,88 @@ public class LuaState {
 		/**
 		 * Stop.
 		 */
-		STOP,
+		STOP(0, 0),
 
 		/**
 		 * Restart.
 		 */
-		RESTART,
+		RESTART(1, 1),
 
 		/**
 		 * Collect.
 		 */
-		COLLECT,
+		COLLECT(2, 2),
 
 		/**
 		 * Count memory in kilobytes.
 		 */
-		COUNT,
+		COUNT(3, 3),
 
 		/**
 		 * Count reminder in bytes.
 		 */
-		COUNTB,
+		COUNTB(4, 4),
 
 		/**
 		 * Step.
 		 */
-		STEP,
+		STEP(5, 5),
 
 		/**
 		 * Set pause.
 		 */
-		SETPAUSE,
+		SETPAUSE(6, 6),
 
 		/**
 		 * Set step multiplier.
 		 */
-		SETSTEPMUL,
+		SETSTEPMUL(7, 7),
 
 		/**
 		 * Undocumented.
 		 * 
 		 * @since JNLua 1.0.0
 		 */
-		SETMAJORINC,
+		SETMAJORINC(8, -1),
 
 		/**
 		 * Returns whether the collector is running (i.e. not stopped).
 		 * 
 		 * @since JNLua 1.0.0
 		 */
-		ISRUNNING,
+		ISRUNNING(9, 9),
 
 		/**
 		 * Changes the collector to the generational mode.
+		 *
+		 * Experimental in Lua 5.2, removed in Lua 5.3.
 		 * 
 		 * @since JNLua 1.0.0
 		 */
-		GEN,
+		GEN(10, -1),
 
 		/**
 		 * Changes the collector to the incremental mode.
 		 * 
 		 * @since JNLua 1.0.0
 		 */
-		INC
+		INC(11, -1);
+
+		final int lua52value;
+		final int lua53value;
+
+		GcAction(int lua52value, int lua53value) {
+			this.lua52value = lua52value;
+			this.lua53value = lua53value;
+		}
+
+		public int getValue() {
+			if (LUA_VERSION_NUM >= 503) {
+				return lua53value;
+			} else {
+				return lua52value;
+			}
+		}
 	}
 
 	/**
@@ -2737,12 +2771,10 @@ public class LuaState {
 		}
 
 		public int getValue() {
-			switch (LUA_VERSION) {
-				case "5.3":
-				default:
-					return lua53value;
-				case "5.2":
-					return lua52value;
+			if (LUA_VERSION_NUM >= 503) {
+				return lua53value;
+			} else {
+				return lua52value;
 			}
 		}
 	}

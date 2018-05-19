@@ -72,8 +72,7 @@ public abstract class AbstractLuaTest {
 		InputStream inputStream = getClass().getClassLoader()
 				.getResourceAsStream(source);
 		luaState.load(inputStream, "=" + moduleName, "t");
-		luaState.pushString(moduleName);
-		luaState.call(1, 0);
+		luaState.call(0, 1);
 
 		// Run all module functions beginning with "test"
 		luaState.getGlobal(moduleName);

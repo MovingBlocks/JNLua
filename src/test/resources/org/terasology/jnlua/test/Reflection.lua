@@ -3,10 +3,10 @@ $Id$
 See LICENSE.txt for license terms.
 ]]
 
-module(..., package.seeall)
+local m = {}
 
 -- General reflection test
-function testReflection ()
+function m.testReflection ()
 	-- Static field
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	assert(TestObject.TEST_FIELD == "test")
@@ -33,7 +33,7 @@ function testReflection ()
 end
 
 -- Type test
-function testTypes ()
+function m.testTypes ()
 	-- Create
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local testObject = TestObject:new()
@@ -66,7 +66,7 @@ function testTypes ()
 end
 
 -- Meta test
-function testMeta ()
+function m.testMeta ()
 	-- Create
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local testObject1 = TestObject:new(1)
@@ -124,7 +124,7 @@ function testMeta ()
 end
 
 -- Overloaded method dispatch test
-function testMethodDispatch ()
+function m.testMethodDispatch ()
 	-- Subclass test
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local testObject = TestObject:new()
@@ -152,8 +152,10 @@ function testMethodDispatch ()
 end
 
 -- VarArgs method test
-function testVarargs ()
+function m.testVarargs ()
 	local String = java.require("java.lang.String")
 	assert(String:format("%s%.0f", "test", 1) == "test1")
 	assert(true)
 end
+
+return m

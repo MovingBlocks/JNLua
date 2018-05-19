@@ -3,10 +3,10 @@ $Id$
 See LICENSE.txt for license terms.
 ]]
 
-module(..., package.seeall)
+local m = {}
 
 -- java.require()
-function testRequire ()
+function m.testRequire ()
 	-- No import
 	local class, imported = java.require("java.lang.System")
 	assert(class)
@@ -31,7 +31,7 @@ function testRequire ()
 end
 
 -- java.new
-function testNew ()
+function m.testNew ()
 	local byte = java.require("byte")
 	assert(byte)
 	
@@ -48,7 +48,7 @@ function testNew ()
 end
 
 -- java.instanceof
-function testInstanceOf ()
+function m.testInstanceOf ()
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local testObject = TestObject:new()
 	assert(java.instanceof(testObject, TestObject))
@@ -57,7 +57,7 @@ function testInstanceOf ()
 end
 
 -- java.cast
-function testCast ()
+function m.testCast ()
 	local StringBuilder = java.require("java.lang.StringBuilder")
 	local sb = StringBuilder:new()
 	sb:append(java.cast(1, "int"))
@@ -65,7 +65,7 @@ function testCast ()
 end
 
 -- java.proxy
-function testProxy ()
+function m.testProxy ()
 	local privilegedAction = { hasRun = false }
 	function privilegedAction:run()
 		self.hasRun = true
@@ -78,7 +78,7 @@ function testProxy ()
 end
 
 -- java.pairs
-function testPairs ()
+function m.testPairs ()
 	-- Create map
 	local HashMap = java.require("java.util.HashMap")
 	local hashMap = HashMap:new()
@@ -109,7 +109,7 @@ function testPairs ()
 end
 
 -- java.ipairs
-function testIPairs ()
+function m.testIPairs ()
 	-- Create list
 	local list = java.new("java.util.ArrayList")
 	for i = 1, 10 do
@@ -146,7 +146,7 @@ function testIPairs ()
 end
 
 -- java.tottable
-function testToTable ()
+function m.testToTable ()
 	-- Test list
 	local arrayList = java.new("java.util.ArrayList")
 	local list = java.totable(arrayList)
@@ -176,7 +176,7 @@ function testToTable ()
 end
 
 -- java.elements
-function testElements()
+function m.testElements()
 	local set = java.new("java.util.HashSet")
 	for i = 1, 10 do
 		set:add(i)
@@ -189,7 +189,7 @@ function testElements()
 end
 
 -- java.fields
-function testFields()
+function m.testFields()
 	-- Static
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local fields = {}
@@ -214,7 +214,7 @@ function testFields()
 end
 
 -- java.methods
-function testMethods()
+function m.testMethods()
 	-- Static
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local methods = {}
@@ -239,7 +239,7 @@ function testMethods()
 end
 
 -- java.properties
-function testProperties()
+function m.testProperties()
 	local TestObject = java.require("org.terasology.jnlua.test.fixture.TestObject")
 	local testObject = java.new(TestObject)
 	local properties = {}
@@ -251,3 +251,5 @@ function testProperties()
 	assert(properties["value"])
 	assert(count == 3)
 end
+
+return m
