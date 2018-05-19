@@ -306,7 +306,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		// dump()
 		luaState.load("c = 3", "=testDump");
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		luaState.dump(out);
+		luaState.dump(out, false);
 		byte[] bytes = out.toByteArray();
 		assertTrue(bytes.length > 4);
 		assertEquals((byte) 27, bytes[0]);

@@ -197,7 +197,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	@Test(expected = NullPointerException.class)
 	public void testNullDump() throws Exception {
 		luaState.load("return 0", "=testNullDump");
-		luaState.dump(null);
+		luaState.dump(null, false);
 	}
 
 	/**
@@ -211,7 +211,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 			public void write(int b) throws IOException {
 				throw new IOException();
 			}
-		});
+		}, false);
 	}
 
 	/**
@@ -219,7 +219,7 @@ public class LuaStateErrorTest extends AbstractLuaTest {
 	 */
 	@Test(expected = IllegalStateException.class)
 	public void testUnderflowDump() throws Exception {
-		luaState.dump(new ByteArrayOutputStream());
+		luaState.dump(new ByteArrayOutputStream(), false);
 	}
 
 	// -- Call tests

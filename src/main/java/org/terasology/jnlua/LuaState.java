@@ -492,8 +492,13 @@ public class LuaState {
 	public synchronized void openLibs() {
 		check();
 		for (Library library : Library.values()) {
-			library.open(this);
-			pop(1);
+			try {
+				library.open(this);
+				pop(1);
+			} catch (IllegalArgumentException e) {
+				// The library may not be present in this Lua version.
+				// Ignore it.
+			}
 		}
 	}
 
@@ -602,12 +607,15 @@ public class LuaState {
 	 * 
 	 * @param outputStream
 	 *            the output stream
+	 * @param strip
+	 *            if Lua >= 5.3 and true, function debug information may
+	 *            be stripped from the binary chunk
 	 * @throws IOException
 	 *             if an IO error occurs
 	 */
-	public synchronized void dump(OutputStream outputStream) throws IOException {
+	public synchronized void dump(OutputStream outputStream, boolean strip) throws IOException {
 		check();
-		lua_dump(outputStream);
+		lua_dump(outputStream, strip);
 	}
 
 	// -- Call
@@ -2330,7 +2338,7 @@ public class LuaState {
 	private native void lua_load(InputStream inputStream, String chunkname,
 			String mode) throws IOException;
 
-	private native void lua_dump(OutputStream outputStream) throws IOException;
+	private native void lua_dump(OutputStream outputStream, boolean strip) throws IOException;
 
 	private native void lua_pcall(int nargs, int nresults);
 
@@ -2485,73 +2493,87 @@ public class LuaState {
 		/**
 		 * The base library.
 		 */
-		BASE,
+		BASE(0),
 
 		/**
 		 * The package library.
 		 */
-		PACKAGE,
+		PACKAGE(1),
 
 		/**
 		 * The coroutine library.
 		 * 
 		 * @since JNLua 1.0.0
 		 */
-		COROUTINE,
+		COROUTINE(2),
 
 		/**
 		 * The table library.
 		 */
-		TABLE,
+		TABLE(3),
 
 		/**
 		 * The IO library.
 		 */
-		IO,
+		IO(4),
 
 		/**
 		 * The OS library.
 		 */
-		OS,
+		OS(5),
 
 		/**
 		 * The string library.
 		 */
-		STRING,
+		STRING(6),
 
 		/**
 		 * The bit32 library.
 		 * 
 		 * @since JNLua 1.0.0
 		 */
-		BIT32,
+		BIT32(7),
 
 		/**
 		 * The math library.
 		 */
-		MATH,
+		MATH(8),
 
 		/**
 		 * The debug library.
 		 */
-		DEBUG,
+		DEBUG(9),
+
+		/**
+		 * The UTF-8 library, available in Lua 5.3+.
+		 */
+		UTF8(10),
 
 		/**
 		 * The Java library.
 		 */
-		JAVA {
+		JAVA(-1) {
 			@Override
 			void open(LuaState luaState) {
 				JavaModule.getInstance().open(luaState);
 			}
 		};
 
+		final int id;
+
+		Library(int id) {
+			this.id = id;
+		}
+
 		// -- Methods
 		/**
 		 * Opens this library.
 		 */
 		void open(LuaState luaState) {
-			luaState.lua_openlib(ordinal());
+			if (id < 0) {
+				throw new RuntimeException("Invalid ID for Library " + name() + "!");
+			}
+			luaState.lua_openlib(id);
 		}
 	}
 

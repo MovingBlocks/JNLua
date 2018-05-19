@@ -322,7 +322,7 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 	 */
 	void dumpChunk(OutputStream out) throws ScriptException {
 		try {
-			luaState.dump(out);
+			luaState.dump(out, false);
 		} catch (LuaException e) {
 			throw new ScriptException(e);
 		} catch (IOException e) {

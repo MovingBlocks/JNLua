@@ -340,19 +340,34 @@ static int openlib_protected (lua_State *L) {
 		libname = LUA_DBLIBNAME;
 		openfunc = luaopen_debug;
 		break;
+#if LUA_VERSION_NUM >= 503
+	case 10:
+		libname = LUA_UTF8LIBNAME;
+		openfunc = luaopen_utf8;
+		break;
+#endif
 	default:
 		return 0;
 	}
 	luaL_requiref(L, libname, openfunc, 1);
 	return 1;
 }
+
+static int openlib_isvalid(jint lib) {
+	if (lib >= 0 && lib <= 9) return 1;
+#if LUA_VERSION_NUM >= 503
+	if (lib == 10) return 1;
+#endif
+	return 0;
+}
+
 JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1openlib (JNIEnv *env, jobject obj, jint lib) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
 	L = getluathread(obj);
 	if (checkstack(L, JNLUA_MINSTACK)
-			&& checkarg(lib >= 0 && lib <= 9, "illegal library")) {
+			&& checkarg(openlib_isvalid(lib), "illegal library")) {
 		openlib_lib = lib;
 		lua_pushcfunction(L, openlib_protected);
 		JNLUA_PCALL(L, 0, 1);
@@ -393,7 +408,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1load (JNIEnv *env
 }
 
 /* lua_dump() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1dump (JNIEnv *env, jobject obj, jobject outputStream) {
+JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1dump (JNIEnv *env, jobject obj, jobject outputStream, jboolean strip) {
 	lua_State *L;
 	Stream stream = { outputStream, NULL, NULL, 0 };
 
@@ -402,7 +417,11 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1dump (JNIEnv *env
 	if (checkstack(L, JNLUA_MINSTACK)
 			&& checknelems(L, 1)
 			&& (stream.byte_array = newbytearray(1024))) {
+#if LUA_VERSION_NUM >= 503
+		lua_dump(L, writehandler, &stream, strip);
+#else
 		lua_dump(L, writehandler, &stream);
+#endif
 	}
 	if (stream.bytes) {
 		(*env)->ReleaseByteArrayElements(env, stream.byte_array, stream.bytes, JNI_ABORT);
