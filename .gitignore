@@ -1,0 +1,14 @@
+# IntelliJ IDEA files
+*.iml
+*.ipr
+*.iws
+.idea
+
+# Gradle files
+build
+out
+.gradle
+
+# Native built files
+native/Linux/*.o
+native/Linux/*.so

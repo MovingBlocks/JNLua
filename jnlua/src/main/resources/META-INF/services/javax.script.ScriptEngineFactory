@@ -1,2 +1,0 @@
-# List of script engine factories in this JAR
-com.naef.jnlua.script.LuaScriptEngineFactory

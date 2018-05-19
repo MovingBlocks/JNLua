@@ -1,0 +1,21 @@
+
+plugins {
+	id 'java'
+	id 'idea'
+	id 'net.minecrell.licenser' version '0.3'
+}
+
+repositories {
+	mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+license {
+    header = project.file('LICENSE.txt')
+}
+
+dependencies {
+	testCompile 'junit:junit:4.12'
+}

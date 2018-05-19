@@ -1,5 +1,0 @@
-#Sat Feb 20 19:46:39 CET 2010
-eclipse.preferences.version=1
-pluginProject.equinox=false
-pluginProject.extensions=false
-selfhosting.binExcludes=/jnlua/target/test-classes,/jnlua/target/test-classes
