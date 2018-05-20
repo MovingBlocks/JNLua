@@ -2566,6 +2566,12 @@ public class LuaState {
 		UTF8(10),
 
 		/**
+		 * The Eris persistence library, available if the "JNLUA_USE_ERIS"
+		 * define was set during compilation with an Eris-patched Lua VM.
+		 */
+		ERIS(256),
+
+		/**
 		 * The Java library.
 		 */
 		JAVA(-1) {

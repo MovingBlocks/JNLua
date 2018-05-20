@@ -21,6 +21,13 @@
 #define JNLUA_THREADLOCAL static __thread
 #endif
 
+#ifdef JNLUA_USE_ERIS
+#include "eris.h"
+#ifndef LUA_ERISLIBNAME
+#define LUA_ERISLIBNAME "eris"
+#endif
+#endif
+
 /* ---- Definitions ---- */
 #define JNLUA_APIVERSION 3
 #define JNLUA_JNIVERSION JNI_VERSION_1_6
@@ -143,10 +150,21 @@ JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_lua_1version(JNIEnv
 	const char *luaVersion;
 	
 	luaVersion = LUA_VERSION;
+#ifdef JNLUA_USE_ERIS
+	if (strncmp(luaVersion, "Lua+Eris ", 9) == 0) {
+		luaVersion += 9;
+	}
+	else
+#endif
 	if (strncmp(luaVersion, "Lua ", 4) == 0) {
 		luaVersion += 4;
 	}
 	return (*env)->NewStringUTF(env, luaVersion); 
+}
+
+/* lua_version_num() */
+JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1versionnum(JNIEnv *env, jobject obj) {
+	return (jint) LUA_VERSION_NUM;
 }
 
 /* ---- Life cycle ---- */
@@ -346,6 +364,12 @@ static int openlib_protected (lua_State *L) {
 		openfunc = luaopen_utf8;
 		break;
 #endif
+#ifdef JNLUA_USE_ERIS
+	case 256:
+		libname = LUA_ERISLIBNAME;
+		openfunc = luaopen_eris;
+		break;
+#endif
 	default:
 		return 0;
 	}
@@ -357,6 +381,9 @@ static int openlib_isvalid(jint lib) {
 	if (lib >= 0 && lib <= 9) return 1;
 #if LUA_VERSION_NUM >= 503
 	if (lib == 10) return 1;
+#endif
+#ifdef JNLUA_USE_ERIS
+	if (lib == 256) return 1;
 #endif
 	return 0;
 }
