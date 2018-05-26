@@ -50,14 +50,14 @@ public interface TypedJavaObject {
 	 * 
 	 * @return the object
 	 */
-	public Object getObject();
+	Object getObject();
 
 	/**
 	 * Returns the type.
 	 * 
 	 * @return the type
 	 */
-	public Class<?> getType();
+	Class<?> getType();
 
 	/**
 	 * Returns whether this is a strong typed Java object.
@@ -65,5 +65,5 @@ public interface TypedJavaObject {
 	 * @return <code>true</code> if this typed Java object is strong, and
 	 *         <code>false</code> if it is weak
 	 */
-	public boolean isStrong();
+	boolean isStrong();
 }

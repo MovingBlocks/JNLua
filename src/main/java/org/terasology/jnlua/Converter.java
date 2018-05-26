@@ -61,8 +61,8 @@ public interface Converter {
 	 * @throws ClassCastException
 	 *             if the conversion is not possible
 	 */
-	public <T> T convertLuaValue(LuaState luaState, int index,
-			Class<T> formalType);
+	<T> T convertLuaValue(LuaState luaState, int index,
+						  Class<T> formalType);
 
 	/**
 	 * Converts a Java object to a Lua value and pushes that value on the stack.
@@ -76,5 +76,5 @@ public interface Converter {
 	 * @param object
 	 *            the Java object, or <code>null</code>
 	 */
-	public void convertJavaObject(LuaState luaState, Object object);
+	void convertJavaObject(LuaState luaState, Object object);
 }

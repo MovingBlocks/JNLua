@@ -45,13 +45,13 @@ public interface JavaReflector {
 	 * @return the implementation, or <code>null</code> if this Java reflector
 	 *         does not support the metamethod
 	 */
-	public JavaFunction getMetamethod(Metamethod metamethod);
+	JavaFunction getMetamethod(Metamethod metamethod);
 
 	// -- Nested types
 	/**
 	 * Lua metamethod.
 	 */
-	public enum Metamethod {
+	enum Metamethod {
 		/**
 		 * <code>__index</code> metamethod.
 		 */
@@ -166,5 +166,5 @@ public interface JavaReflector {
 		public String getMetamethodName() {
 			return "__" + toString().toLowerCase();
 		}
-	};
+	}
 }

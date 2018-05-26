@@ -129,100 +129,40 @@ public class DefaultConverter implements Converter {
 	 */
 	private static final Map<Class<?>, LuaValueConverter<?>> LUA_VALUE_CONVERTERS = new HashMap<Class<?>, LuaValueConverter<?>>();
 	static {
-		LuaValueConverter<Boolean> booleanConverter = new LuaValueConverter<Boolean>() {
-			@Override
-			public Boolean convert(LuaState luaState, int index) {
-				return Boolean.valueOf(luaState.toBoolean(index));
-			}
-		};
+		LuaValueConverter<Boolean> booleanConverter = (luaState, index) -> Boolean.valueOf(luaState.toBoolean(index));
 		LUA_VALUE_CONVERTERS.put(Boolean.class, booleanConverter);
 		LUA_VALUE_CONVERTERS.put(Boolean.TYPE, booleanConverter);
 
-		LuaValueConverter<Byte> byteConverter = new LuaValueConverter<Byte>() {
-			@Override
-			public Byte convert(LuaState luaState, int index) {
-				return Byte.valueOf((byte) luaState.toInteger(index));
-			}
-		};
+		LuaValueConverter<Byte> byteConverter = (luaState, index) -> Byte.valueOf((byte) luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Byte.class, byteConverter);
 		LUA_VALUE_CONVERTERS.put(Byte.TYPE, byteConverter);
-		LuaValueConverter<Short> shortConverter = new LuaValueConverter<Short>() {
-			@Override
-			public Short convert(LuaState luaState, int index) {
-				return Short.valueOf((short) luaState.toInteger(index));
-			}
-		};
+		LuaValueConverter<Short> shortConverter = (luaState, index) -> Short.valueOf((short) luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Short.class, shortConverter);
 		LUA_VALUE_CONVERTERS.put(Short.TYPE, shortConverter);
-		LuaValueConverter<Integer> integerConverter = new LuaValueConverter<Integer>() {
-			@Override
-			public Integer convert(LuaState luaState, int index) {
-				return Integer.valueOf(luaState.toInteger(index));
-			}
-		};
+		LuaValueConverter<Integer> integerConverter = (luaState, index) -> Integer.valueOf(luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Integer.class, integerConverter);
 		LUA_VALUE_CONVERTERS.put(Integer.TYPE, integerConverter);
-		LuaValueConverter<Long> longConverter = new LuaValueConverter<Long>() {
-			@Override
-			public Long convert(LuaState luaState, int index) {
-				return Long.valueOf((long) luaState.toNumber(index));
-			}
-		};
+		LuaValueConverter<Long> longConverter = (luaState, index) -> Long.valueOf((long) luaState.toNumber(index));
 		LUA_VALUE_CONVERTERS.put(Long.class, longConverter);
 		LUA_VALUE_CONVERTERS.put(Long.TYPE, longConverter);
-		LuaValueConverter<Float> floatConverter = new LuaValueConverter<Float>() {
-			@Override
-			public Float convert(LuaState luaState, int index) {
-				return Float.valueOf((float) luaState.toNumber(index));
-			}
-		};
+		LuaValueConverter<Float> floatConverter = (luaState, index) -> Float.valueOf((float) luaState.toNumber(index));
 		LUA_VALUE_CONVERTERS.put(Float.class, floatConverter);
 		LUA_VALUE_CONVERTERS.put(Float.TYPE, floatConverter);
-		LuaValueConverter<Double> doubleConverter = new LuaValueConverter<Double>() {
-			@Override
-			public Double convert(LuaState luaState, int index) {
-				return Double.valueOf(luaState.toNumber(index));
-			}
-		};
+		LuaValueConverter<Double> doubleConverter = (luaState, index) -> Double.valueOf(luaState.toNumber(index));
 		LUA_VALUE_CONVERTERS.put(Double.class, doubleConverter);
 		LUA_VALUE_CONVERTERS.put(Double.TYPE, doubleConverter);
-		LuaValueConverter<BigInteger> bigIntegerConverter = new LuaValueConverter<BigInteger>() {
-			@Override
-			public BigInteger convert(LuaState luaState, int index) {
-				return BigDecimal.valueOf(luaState.toNumber(index))
-						.setScale(0, BigDecimal.ROUND_HALF_EVEN).toBigInteger();
-			}
-		};
+		LuaValueConverter<BigInteger> bigIntegerConverter = (luaState, index) -> BigDecimal.valueOf(luaState.toNumber(index))
+				.setScale(0, BigDecimal.ROUND_HALF_EVEN).toBigInteger();
 		LUA_VALUE_CONVERTERS.put(BigInteger.class, bigIntegerConverter);
-		LuaValueConverter<BigDecimal> bigDecimalConverter = new LuaValueConverter<BigDecimal>() {
-			@Override
-			public BigDecimal convert(LuaState luaState, int index) {
-				return BigDecimal.valueOf(luaState.toNumber(index));
-			}
-		};
+		LuaValueConverter<BigDecimal> bigDecimalConverter = (luaState, index) -> BigDecimal.valueOf(luaState.toNumber(index));
 		LUA_VALUE_CONVERTERS.put(BigDecimal.class, bigDecimalConverter);
-		LuaValueConverter<Character> characterConverter = new LuaValueConverter<Character>() {
-			@Override
-			public Character convert(LuaState luaState, int index) {
-				return Character.valueOf((char) luaState.toInteger(index));
-			}
-		};
+		LuaValueConverter<Character> characterConverter = (luaState, index) -> Character.valueOf((char) luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Character.class, characterConverter);
 		LUA_VALUE_CONVERTERS.put(Character.TYPE, characterConverter);
-		LuaValueConverter<String> stringConverter = new LuaValueConverter<String>() {
-			@Override
-			public String convert(LuaState luaState, int index) {
-				return luaState.toString(index);
-			}
-		};
+		LuaValueConverter<String> stringConverter = (luaState, index) -> luaState.toString(index);
 		LUA_VALUE_CONVERTERS.put(String.class, stringConverter);
 		if (!RAW_BYTE_ARRAY) {
-			LuaValueConverter<byte[]> byteArrayConverter = new LuaValueConverter<byte[]>() {
-				@Override
-				public byte[] convert(LuaState luaState, int index) {
-					return luaState.toByteArray(index);
-				}
-			};
+			LuaValueConverter<byte[]> byteArrayConverter = (luaState, index) -> luaState.toByteArray(index);
 			LUA_VALUE_CONVERTERS.put(byte[].class, byteArrayConverter);
 		}
 	}
@@ -232,20 +172,10 @@ public class DefaultConverter implements Converter {
 	 */
 	private static final Map<Class<?>, JavaObjectConverter<?>> JAVA_OBJECT_CONVERTERS = new HashMap<Class<?>, JavaObjectConverter<?>>();
 	static {
-		JavaObjectConverter<Boolean> booleanConverter = new JavaObjectConverter<Boolean>() {
-			@Override
-			public void convert(LuaState luaState, Boolean booleanValue) {
-				luaState.pushBoolean(booleanValue.booleanValue());
-			}
-		};
+		JavaObjectConverter<Boolean> booleanConverter = (luaState, booleanValue) -> luaState.pushBoolean(booleanValue.booleanValue());
 		JAVA_OBJECT_CONVERTERS.put(Boolean.class, booleanConverter);
 		JAVA_OBJECT_CONVERTERS.put(Boolean.TYPE, booleanConverter);
-		JavaObjectConverter<Number> numberConverter = new JavaObjectConverter<Number>() {
-			@Override
-			public void convert(LuaState luaState, Number number) {
-				luaState.pushNumber(number.doubleValue());
-			}
-		};
+		JavaObjectConverter<Number> numberConverter = (luaState, number) -> luaState.pushNumber(number.doubleValue());
 		JAVA_OBJECT_CONVERTERS.put(Byte.class, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(Byte.TYPE, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(Short.class, numberConverter);
@@ -260,28 +190,13 @@ public class DefaultConverter implements Converter {
 		JAVA_OBJECT_CONVERTERS.put(Double.TYPE, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(BigInteger.class, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(BigDecimal.class, numberConverter);
-		JavaObjectConverter<Character> characterConverter = new JavaObjectConverter<Character>() {
-			@Override
-			public void convert(LuaState luaState, Character character) {
-				luaState.pushInteger(character.charValue());
-			}
-		};
+		JavaObjectConverter<Character> characterConverter = (luaState, character) -> luaState.pushInteger(character.charValue());
 		JAVA_OBJECT_CONVERTERS.put(Character.class, characterConverter);
 		JAVA_OBJECT_CONVERTERS.put(Character.TYPE, characterConverter);
-		JavaObjectConverter<String> stringConverter = new JavaObjectConverter<String>() {
-			@Override
-			public void convert(LuaState luaState, String string) {
-				luaState.pushString(string);
-			}
-		};
+		JavaObjectConverter<String> stringConverter = (luaState, string) -> luaState.pushString(string);
 		JAVA_OBJECT_CONVERTERS.put(String.class, stringConverter);
 		if (!RAW_BYTE_ARRAY) {
-			JavaObjectConverter<byte[]> byteArrayConverter = new JavaObjectConverter<byte[]>() {
-				@Override
-				public void convert(LuaState luaState, byte[] byteArray) {
-					luaState.pushByteArray(byteArray);
-				}
-			};
+			JavaObjectConverter<byte[]> byteArrayConverter = (luaState, byteArray) -> luaState.pushByteArray(byteArray);
 			JAVA_OBJECT_CONVERTERS.put(byte[].class, byteArrayConverter);
 		}
 	}
@@ -579,20 +494,22 @@ public class DefaultConverter implements Converter {
 	/**
 	 * Converts Lua values.
 	 */
+	@FunctionalInterface
 	private interface LuaValueConverter<T> {
 		/**
 		 * Converts a Lua value to a Java object.
 		 */
-		public T convert(LuaState luaState, int index);
+		T convert(LuaState luaState, int index);
 	}
 
 	/**
 	 * Converts Java object.
 	 */
+	@FunctionalInterface
 	private interface JavaObjectConverter<T> {
 		/**
 		 * Converts a Java object to a Lua value.
 		 */
-		public void convert(LuaState luaState, T object);
+		void convert(LuaState luaState, T object);
 	}
 }

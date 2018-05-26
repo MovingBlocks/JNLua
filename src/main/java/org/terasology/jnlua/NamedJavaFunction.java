@@ -31,5 +31,25 @@ public interface NamedJavaFunction extends JavaFunction {
 	 * 
 	 * @return the Java function name
 	 */
-	public String getName();
+	String getName();
+
+	/**
+	 * Creates a NamedJavaFunction from a JavaFunction.
+	 * @param name The Lua-side name of the function.
+	 * @param function The function.
+	 * @return The created NamedJavaFunction.
+	 */
+	static NamedJavaFunction create(String name, JavaFunction function) {
+		return new NamedJavaFunction() {
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public int invoke(LuaState luaState) {
+				return function.invoke(luaState);
+			}
+		};
+	}
 }

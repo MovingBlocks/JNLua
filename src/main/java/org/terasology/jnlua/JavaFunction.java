@@ -25,6 +25,7 @@ package org.terasology.jnlua;
 /**
  * Provides a Lua function implemented in Java.
  */
+@FunctionalInterface
 public interface JavaFunction {
 	/**
 	 * Invokes this Java function. The function arguments are on the stack. The
@@ -41,5 +42,5 @@ public interface JavaFunction {
 	 *            the Lua state this function has been invoked on
 	 * @return the number of return values
 	 */
-	public int invoke(LuaState luaState);
+	int invoke(LuaState luaState);
 }

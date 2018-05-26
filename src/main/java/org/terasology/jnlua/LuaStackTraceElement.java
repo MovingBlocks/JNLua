@@ -27,9 +27,9 @@ package org.terasology.jnlua;
  */
 public class LuaStackTraceElement {
 	// -- State
-	private String functionName;
-	private String sourceName;
-	private int lineNumber;
+	private final String functionName;
+	private final String sourceName;
+	private final int lineNumber;
 
 	// -- Construction
 	/**
