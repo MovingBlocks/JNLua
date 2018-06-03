@@ -76,7 +76,7 @@ class LuaBindings extends AbstractTableMap<String> implements Bindings {
 
 	@Override
 	public void pushValue() {
-		getLuaState().rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
+		getLuaState().rawGet(getLuaState().REGISTRYINDEX, LuaState.RIDX_GLOBALS);
 	}
 
 	// -- Package-private methods

@@ -84,13 +84,17 @@ public final class NativeSupport {
 	 * Loads the library.
 	 */
 	public interface Loader {
-		public void load();
+		public void load(Class src);
 	}
 
 	private class DefaultLoader implements Loader {
 		@Override
-		public void load() {
-			System.loadLibrary("jnlua5.3");
+		public void load(Class src) {
+			if (src == LuaState53.class) {
+				System.loadLibrary("jnlua53");
+			} else {
+				System.loadLibrary("jnlua52");
+			}
 		}
 	}
 }

@@ -30,6 +30,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineFactory;
 
 import org.terasology.jnlua.LuaState;
+import org.terasology.jnlua.LuaState53;
 
 /**
  * Lua script engine factory implementation conforming to JSR 223: Scripting for
@@ -103,7 +104,7 @@ public class LuaScriptEngineFactory implements ScriptEngineFactory {
 
 	@Override
 	public String getLanguageVersion() {
-		return LuaState.LUA_VERSION;
+		return "5.3"; /* TODO */
 	}
 
 	@Override

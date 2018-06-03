@@ -44,6 +44,15 @@
 	}\
 }
 
+// Two levels of indirection are required here due to how the C99 standard works.
+#define JNI_LUASTATE_METHOD(x) LUASTATE_SUFFIX_CONCAT_INNER(Java_org_terasology_jnlua_LuaState,x,_,JNLUA_SUFFIX)
+#define LUASTATE_SUFFIX_CONCAT(c,x) LUASTATE_SUFFIX_CONCAT_INNER(c,x,,JNLUA_SUFFIX)
+#define LUASTATE_SUFFIX_CONCAT_INNER(c,x,v,s) LUASTATE_SUFFIX_CONCAT_INNER_2(c,x,v,s)
+#define LUASTATE_SUFFIX_CONCAT_INNER_2(c,x,v,s) c ## s ## v ## x
+
+#define AS_STR(x) AS_STR_INNER(x)
+#define AS_STR_INNER(x) # x
+
 /* ---- Types ---- */
 /* Structure for reading and writing Java streams. */
 typedef struct StreamStruct  {
@@ -103,6 +112,7 @@ static jfieldID luastate_id = 0;
 static jfieldID luathread_id = 0;
 static jfieldID yield_id = 0;
 static jclass luadebug_class = NULL;
+static jclass luadebug_local_class = NULL;
 static jmethodID luadebug_init_id = 0;
 static jfieldID luadebug_field_id = 0;
 static jclass javafunction_interface = NULL;
@@ -141,12 +151,12 @@ JNLUA_THREADLOCAL JNIEnv *thread_env;
 
 /* ---- Fields ---- */
 /* lua_registryindex() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1registryindex(JNIEnv *env, jobject obj) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1registryindex)(JNIEnv *env, jobject obj) {
 	return (jint) LUA_REGISTRYINDEX;
 }
 
 /* lua_version() */
-JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_lua_1version(JNIEnv *env, jobject obj) {
+JNIEXPORT jstring JNICALL JNI_LUASTATE_METHOD(lua_1version)(JNIEnv *env, jobject obj) {
 	const char *luaVersion;
 	
 	luaVersion = LUA_VERSION;
@@ -163,7 +173,7 @@ JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_lua_1version(JNIEnv
 }
 
 /* lua_version_num() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1versionnum(JNIEnv *env, jobject obj) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1versionnum)(JNIEnv *env, jobject obj) {
 	return (jint) LUA_VERSION_NUM;
 }
 
@@ -201,7 +211,7 @@ static int newstate_protected (lua_State *L) {
 	lua_setfield(L, -2, "__gc");
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1newstate (JNIEnv *env, jobject obj, int apiversion, jlong existing) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newstate) (JNIEnv *env, jobject obj, int apiversion, jlong existing) {
 	lua_State *L;
 	
 	/* Initialized? */
@@ -247,7 +257,7 @@ static int close_protected (lua_State *L) {
 	
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1close (JNIEnv *env, jobject obj, jboolean ownstate) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1close) (JNIEnv *env, jobject obj, jboolean ownstate) {
 	lua_State *L, *T;
 	lua_Debug ar;
 
@@ -296,7 +306,7 @@ static int gc_protected (lua_State *L) {
 	gc_result = lua_gc(L, gc_what, gc_data);
 	return 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1gc (JNIEnv *env, jobject obj, jint what, jint data) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1gc) (JNIEnv *env, jobject obj, jint what, jint data) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -388,7 +398,7 @@ static int openlib_isvalid(jint lib) {
 	return 0;
 }
 
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1openlib (JNIEnv *env, jobject obj, jint lib) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1openlib) (JNIEnv *env, jobject obj, jint lib) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -403,7 +413,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1openlib (JNIEnv *
 
 /* ---- Load and dump ---- */
 /* lua_load() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1load (JNIEnv *env, jobject obj, jobject inputStream, jstring chunkname, jstring mode) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1load) (JNIEnv *env, jobject obj, jobject inputStream, jstring chunkname, jstring mode) {
 	lua_State *L;
 	const char *chunkname_utf = NULL, *mode_utf = NULL;
 	Stream stream = { inputStream, NULL, NULL, 0 };
@@ -435,7 +445,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1load (JNIEnv *env
 }
 
 /* lua_dump() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1dump (JNIEnv *env, jobject obj, jobject outputStream, jboolean strip) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1dump) (JNIEnv *env, jobject obj, jobject outputStream, jboolean strip) {
 	lua_State *L;
 	Stream stream = { outputStream, NULL, NULL, 0 };
 
@@ -460,7 +470,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1dump (JNIEnv *env
 
 /* ---- Call ---- */
 /* lua_pcall() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pcall (JNIEnv *env, jobject obj, jint nargs, jint nresults) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pcall) (JNIEnv *env, jobject obj, jint nargs, jint nresults) {
 	lua_State *L;
 	int index, status;
 
@@ -488,7 +498,7 @@ static int getglobal_protected (lua_State *L) {
 	lua_getglobal(L, getglobal_name);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1getglobal (JNIEnv *env, jobject obj, jstring name) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1getglobal) (JNIEnv *env, jobject obj, jstring name) {
 	lua_State *L;
 
 	getglobal_name = NULL;
@@ -510,7 +520,7 @@ static int setglobal_protected (lua_State *L) {
 	lua_setglobal(L, setglobal_name);
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1setglobal (JNIEnv *env, jobject obj, jstring name) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1setglobal) (JNIEnv *env, jobject obj, jstring name) {
 	lua_State *L;
 
 	setglobal_name = NULL;
@@ -530,7 +540,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1setglobal (JNIEnv
 
 /* ---- Stack push ---- */
 /* lua_pushboolean() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushboolean (JNIEnv *env, jobject obj, jint b) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushboolean) (JNIEnv *env, jobject obj, jint b) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -547,7 +557,7 @@ static int pushbytearray_protected (lua_State *L) {
 	lua_pushlstring(L, pushbytearray_b, pushbytearray_length);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushbytearray (JNIEnv *env, jobject obj, jbyteArray ba) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushbytearray) (JNIEnv *env, jobject obj, jbyteArray ba) {
 	lua_State *L;
 	
 	pushbytearray_b = NULL;
@@ -565,7 +575,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushbytearray (JN
 }
 
 /* lua_pushinteger() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushinteger (JNIEnv *env, jobject obj, jint n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushinteger) (JNIEnv *env, jobject obj, jint n) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -582,7 +592,7 @@ static int pushjavafunction_protected (lua_State *L) {
 	lua_pushcclosure(L, calljavafunction, 1);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushjavafunction (JNIEnv *env, jobject obj, jobject f) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushjavafunction) (JNIEnv *env, jobject obj, jobject f) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -601,7 +611,7 @@ static int pushjavaobject_protected (lua_State *L) {
 	pushjavaobject(L, pushjavaobject_object);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushjavaobject (JNIEnv *env, jobject obj, jobject object) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushjavaobject) (JNIEnv *env, jobject obj, jobject object) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -615,7 +625,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushjavaobject (J
 }
 
 /* lua_pushnil() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushnil (JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushnil) (JNIEnv *env, jobject obj) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -626,7 +636,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushnil (JNIEnv *
 }
 
 /* lua_pushnumber() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushnumber (JNIEnv *env, jobject obj, jdouble n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushnumber) (JNIEnv *env, jobject obj, jdouble n) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -638,7 +648,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushnumber (JNIEn
 
 /* ---- Stack type test ---- */
 /* lua_isboolean() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isboolean (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isboolean) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -650,7 +660,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isboolean (JNIEnv
 }
 
 /* lua_iscfunction() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1iscfunction (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1iscfunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_CFunction c_function = NULL;
 	
@@ -664,7 +674,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1iscfunction (JNIE
 }
 
 /* lua_isfunction() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isfunction (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isfunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -676,7 +686,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isfunction (JNIEn
 }
 
 /* lua_isjavafunction() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isjavafunction (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isjavafunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -693,7 +703,7 @@ static int isjavaobject_protected (lua_State *L) {
 	isjavaobject_result = tojavaobject(L, 1, NULL) != NULL;
 	return 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isjavaobject (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isjavaobject) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -711,7 +721,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isjavaobject (JNI
 }
 
 /* lua_isnil() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnil (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnil) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -723,7 +733,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnil (JNIEnv *en
 }
 
 /* lua_isnone() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnone (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnone) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -732,7 +742,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnone (JNIEnv *e
 }
 
 /* lua_isnoneornil() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnoneornil (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnoneornil) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -744,7 +754,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnoneornil (JNIE
 }
 
 /* lua_isnumber() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnumber (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnumber) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -756,7 +766,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isnumber (JNIEnv 
 }
 
 /* lua_isstring() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isstring (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isstring) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -768,7 +778,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isstring (JNIEnv 
 }
 
 /* lua_istable() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1istable (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1istable) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -780,7 +790,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1istable (JNIEnv *
 }
 
 /* lua_isthread() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1isthread (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isthread) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -799,7 +809,7 @@ static int compare_protected (lua_State *L) {
 	compare_result = lua_compare(L, 1, 2, compare_operator);
 	return 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1compare (JNIEnv *env, jobject obj, jint index1, jint index2, jint operator) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1compare) (JNIEnv *env, jobject obj, jint index1, jint index2, jint operator) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -820,7 +830,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1compare (JNIEnv *
 }
 
 /* lua_rawequal() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawequal (JNIEnv *env, jobject obj, jint index1, jint index2) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1rawequal) (JNIEnv *env, jobject obj, jint index1, jint index2) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -832,7 +842,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawequal (JNIEnv 
 }
 
 /* lua_rawlen() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawlen (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1rawlen) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	size_t result = 0;
 	
@@ -845,7 +855,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawlen (JNIEnv *e
 }
 
 /* lua_toboolean() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1toboolean (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1toboolean) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -863,7 +873,7 @@ static int tobytearray_protected (lua_State *L) {
 	tobytearray_result = lua_tolstring(L, 1, &tobytearray_length);
 	return 0;
 }
-JNIEXPORT jbyteArray JNICALL Java_org_terasology_jnlua_LuaState_lua_1tobytearray (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jbyteArray JNICALL JNI_LUASTATE_METHOD(lua_1tobytearray) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	jbyteArray ba;
 	jbyte *b;
@@ -895,7 +905,7 @@ JNIEXPORT jbyteArray JNICALL Java_org_terasology_jnlua_LuaState_lua_1tobytearray
 }
 
 /* lua_tointeger() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1tointeger (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1tointeger) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_Integer result = 0;
 	
@@ -908,7 +918,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1tointeger (JNIEnv
 }
 
 /* lua_tointegerx() */
-JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1tointegerx (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jobject JNICALL JNI_LUASTATE_METHOD(lua_1tointegerx) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_Integer result = 0;
 	int isnum = 0;
@@ -932,7 +942,7 @@ static int tojavafunction_protected (lua_State *L) {
 	}
 	return 0;
 }
-JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1tojavafunction (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jobject JNICALL JNI_LUASTATE_METHOD(lua_1tojavafunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -953,7 +963,7 @@ static int tojavaobject_protected (lua_State *L) {
 	tojavaobject_result = tojavaobject(L, 1, NULL);
 	return 0;
 }
-JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1tojavaobject (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jobject JNICALL JNI_LUASTATE_METHOD(lua_1tojavaobject) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -969,7 +979,7 @@ JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1tojavaobject (
 }
 
 /* lua_tonumber() */
-JNIEXPORT jdouble JNICALL Java_org_terasology_jnlua_LuaState_lua_1tonumber (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jdouble JNICALL JNI_LUASTATE_METHOD(lua_1tonumber) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_Number result = 0.0;
 	
@@ -982,7 +992,7 @@ JNIEXPORT jdouble JNICALL Java_org_terasology_jnlua_LuaState_lua_1tonumber (JNIE
 }
 
 /* lua_tonumberx() */
-JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1tonumberx (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jobject JNICALL JNI_LUASTATE_METHOD(lua_1tonumberx) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_Number result = 0.0;
 	int isnum = 0;
@@ -996,7 +1006,7 @@ JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1tonumberx (JNI
 }
 
 /* lua_topointer() */
-JNIEXPORT jlong JNICALL Java_org_terasology_jnlua_LuaState_lua_1topointer (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jlong JNICALL JNI_LUASTATE_METHOD(lua_1topointer) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	const void *result = NULL;
 	
@@ -1009,7 +1019,7 @@ JNIEXPORT jlong JNICALL Java_org_terasology_jnlua_LuaState_lua_1topointer (JNIEn
 }
 
 /* lua_type() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1type (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1type) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1022,7 +1032,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1type (JNIEnv *env
 
 /* ---- Stack operations ---- */
 /* lua_absindex() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1absindex (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1absindex) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1036,7 +1046,7 @@ static int arith_protected (lua_State *L) {
 	lua_arith(L, arith_operator);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1arith (JNIEnv *env, jobject obj, jint operator) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1arith) (JNIEnv *env, jobject obj, jint operator) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1061,7 +1071,7 @@ static int concat_protected (lua_State *L) {
 	lua_concat(L, concat_n);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1concat (JNIEnv *env, jobject obj, jint n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1concat) (JNIEnv *env, jobject obj, jint n) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -1077,7 +1087,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1concat (JNIEnv *e
 }
 
 /* lua_copy() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1copy (JNIEnv *env, jobject obj, jint from_index, jint to_index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1copy) (JNIEnv *env, jobject obj, jint from_index, jint to_index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1089,7 +1099,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1copy (JNIEnv *env
 }
 
 /* lua_gettop() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1gettop (JNIEnv *env, jobject obj) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1gettop) (JNIEnv *env, jobject obj) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1102,7 +1112,7 @@ static int len_protected (lua_State *L) {
 	lua_len(L, 1);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1len (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1len) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1117,7 +1127,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1len (JNIEnv *env,
 }
 
 /* lua_insert() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1insert (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1insert) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1128,7 +1138,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1insert (JNIEnv *e
 }
 
 /* lua_pop() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pop (JNIEnv *env, jobject obj, jint n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pop) (JNIEnv *env, jobject obj, jint n) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1139,7 +1149,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pop (JNIEnv *env,
 }
 
 /* lua_pushvalue() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushvalue (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushvalue) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1151,7 +1161,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1pushvalue (JNIEnv
 }
 
 /* lua_remove() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1remove (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1remove) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -1162,7 +1172,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1remove (JNIEnv *e
 }
 
 /* lua_replace() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1replace (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1replace) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1174,7 +1184,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1replace (JNIEnv *
 }
 
 /* lua_settop() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1settop (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1settop) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1193,7 +1203,7 @@ static int createtable_protected (lua_State *L) {
 	lua_createtable(L, createtable_narr, createtable_nrec);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1createtable (JNIEnv *env, jobject obj, jint narr, jint nrec) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1createtable) (JNIEnv *env, jobject obj, jint narr, jint nrec) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1215,7 +1225,7 @@ static int getsubtable_protected (lua_State *L) {
 	getsubtable_result = luaL_getsubtable(L, 1, getsubtable_fname);
 	return 1;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1getsubtable (JNIEnv *env, jobject obj, jint index, jstring fname) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1getsubtable) (JNIEnv *env, jobject obj, jint index, jstring fname) {
 	lua_State *L;
 	
 	getsubtable_fname = NULL;
@@ -1241,7 +1251,7 @@ static int getfield_protected (lua_State *L) {
 	lua_getfield(L, 1, getfield_k);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1getfield (JNIEnv *env, jobject obj, jint index, jstring k) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1getfield) (JNIEnv *env, jobject obj, jint index, jstring k) {
 	lua_State *L;
 
 	getfield_k = NULL;
@@ -1265,7 +1275,7 @@ static int gettable_protected (lua_State *L) {
 	lua_gettable(L, 1);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1gettable (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1gettable) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1286,7 +1296,7 @@ static int newtable_protected (lua_State *L) {
 	lua_newtable(L);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1newtable (JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newtable) (JNIEnv *env, jobject obj) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1303,7 +1313,7 @@ static int next_protected (lua_State *L) {
 	next_result = lua_next(L, 1);
 	return next_result ? 2 : 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1next (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1next) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1321,7 +1331,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1next (JNIEnv *env
 }
 
 /* lua_rawget() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawget (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1rawget) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1332,7 +1342,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawget (JNIEnv *e
 }
 
 /* lua_rawgeti() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawgeti (JNIEnv *env, jobject obj, jint index, jint n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1rawgeti) (JNIEnv *env, jobject obj, jint index, jint n) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1348,7 +1358,7 @@ static int rawset_protected (lua_State *L) {
 	lua_rawset(L, 1);
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawset (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1rawset) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1371,7 +1381,7 @@ static int rawseti_protected (lua_State *L) {
 	lua_rawseti(L, 1, rawseti_n);
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1rawseti (JNIEnv *env, jobject obj, jint index, jint n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1rawseti) (JNIEnv *env, jobject obj, jint index, jint n) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1393,7 +1403,7 @@ static int settable_protected (lua_State *L) {
 	lua_settable(L, 1);
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1settable (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1settable) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1416,7 +1426,7 @@ static int setfield_protected (lua_State *L) {
 	lua_setfield(L, 1, setfield_k);
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1setfield (JNIEnv *env, jobject obj, jint index, jstring k) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1setfield) (JNIEnv *env, jobject obj, jint index, jstring k) {
 	lua_State *L;
 	
 	setfield_k = NULL;
@@ -1439,7 +1449,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1setfield (JNIEnv 
 
 /* ---- Metatable ---- */
 /* lua_getmetatable() */
-JNIEXPORT int JNICALL Java_org_terasology_jnlua_LuaState_lua_1getmetatable (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT int JNICALL JNI_LUASTATE_METHOD(lua_1getmetatable) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	int result = 0;
 	
@@ -1453,7 +1463,7 @@ JNIEXPORT int JNICALL Java_org_terasology_jnlua_LuaState_lua_1getmetatable (JNIE
 }
 
 /* lua_setmetatable() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1setmetatable (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1setmetatable) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1472,7 +1482,7 @@ static int getmetafield_protected (lua_State *L) {
 	getmetafield_result = luaL_getmetafield(L, 1, getmetafield_k);
 	return getmetafield_result ? 1 : 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1getmetafield (JNIEnv *env, jobject obj, jint index, jstring k) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1getmetafield) (JNIEnv *env, jobject obj, jint index, jstring k) {
 	lua_State *L;
 	
 	getmetafield_k = NULL;
@@ -1502,7 +1512,7 @@ static int newthread_protected (lua_State *L) {
 	lua_xmove(L, T, 1);
 	return 1;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1newthread (JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newthread) (JNIEnv *env, jobject obj) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1516,7 +1526,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1newthread (JNIEnv
 }
 
 /* lua_resume() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1resume (JNIEnv *env, jobject obj, jint index, jint nargs) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1resume) (JNIEnv *env, jobject obj, jint index, jint nargs) {
 	lua_State *L, *T;
 	int status;
 	int nresults = 0;
@@ -1547,7 +1557,7 @@ JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1resume (JNIEnv *e
 }
 
 /* lua_status() */
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1status (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1status) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	int result = 0;
 	
@@ -1566,7 +1576,7 @@ static int ref_protected (lua_State *L) {
 	ref_result = luaL_ref(L, 1);
 	return 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1ref (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1ref) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1589,7 +1599,7 @@ static int unref_protected (lua_State *L) {
 	luaL_unref(L, 1, unref_ref);
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1unref (JNIEnv *env, jobject obj, jint index, jint ref) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1unref) (JNIEnv *env, jobject obj, jint index, jint ref) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1606,7 +1616,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1unref (JNIEnv *en
 
 /* ---- Debug ---- */
 /* lua_getstack() */
-JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1getstack (JNIEnv *env, jobject obj, jint level) {
+JNIEXPORT jobject JNICALL JNI_LUASTATE_METHOD(lua_1getstack) (JNIEnv *env, jobject obj, jint level) {
 	lua_State *L;
 	lua_Debug *ar = NULL;
 	jobject result = NULL;
@@ -1618,7 +1628,7 @@ JNIEXPORT jobject JNICALL Java_org_terasology_jnlua_LuaState_lua_1getstack (JNIE
 		if (ar) {
 			memset(ar, 0, sizeof(lua_Debug));
 			if (lua_getstack(L, level, ar)) {
-				result = (*env)->NewObject(env, luadebug_class, luadebug_init_id, (jlong) (uintptr_t) ar, JNI_TRUE);
+				result = (*env)->NewObject(env, luadebug_local_class, luadebug_init_id, (jlong) (uintptr_t) ar, JNI_TRUE);
 			}
 		}
 	}
@@ -1636,7 +1646,7 @@ static int getinfo_protected (lua_State *L) {
 	getinfo_result = lua_getinfo(L, getinfo_what, getluadebug(getinfo_ar));
 	return 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1getinfo (JNIEnv *env, jobject obj, jstring what, jobject ar) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1getinfo) (JNIEnv *env, jobject obj, jstring what, jobject ar) {
 	lua_State *L;
 	
 	getinfo_what = NULL;
@@ -1669,7 +1679,7 @@ static int tablesize_protected (lua_State *L) {
 	tablesize_result = count;
 	return 0;
 }
-JNIEXPORT jint JNICALL Java_org_terasology_jnlua_LuaState_lua_1tablesize (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1tablesize) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1705,7 +1715,7 @@ static int tablemove_protected (lua_State *L) {
 	}
 	return 0;
 }
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1tablemove (JNIEnv *env, jobject obj, jint index, jint from, jint to, jint count) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1tablemove) (JNIEnv *env, jobject obj, jint index, jint from, jint to, jint count) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -1725,7 +1735,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_lua_1tablemove (JNIEnv
 
 /* ---- Debug structure ---- */
 /* lua_debugfree() */
-JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_00024LuaDebug_lua_1debugfree (JNIEnv *env, jobject obj) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(00024LuaDebug_lua_1debugfree) (JNIEnv *env, jobject obj) {
 	lua_Debug *ar;
 	
 	JNLUA_ENV(env);
@@ -1735,7 +1745,7 @@ JNIEXPORT void JNICALL Java_org_terasology_jnlua_LuaState_00024LuaDebug_lua_1deb
 }
 
 /* lua_debugname() */
-JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_00024LuaDebug_lua_1debugname (JNIEnv *env, jobject obj) {
+JNIEXPORT jstring JNICALL JNI_LUASTATE_METHOD(00024LuaDebug_lua_1debugname) (JNIEnv *env, jobject obj) {
 	lua_Debug *ar;
 	
 	JNLUA_ENV(env);
@@ -1744,7 +1754,7 @@ JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_00024LuaDebug_lua_1
 }
 
 /* lua_debugnamewhat() */
-JNIEXPORT jstring JNICALL Java_org_terasology_jnlua_LuaState_00024LuaDebug_lua_1debugnamewhat (JNIEnv *env, jobject obj) {
+JNIEXPORT jstring JNICALL JNI_LUASTATE_METHOD(00024LuaDebug_lua_1debugnamewhat) (JNIEnv *env, jobject obj) {
 	lua_Debug *ar;
 	
 	JNLUA_ENV(env);
@@ -1770,7 +1780,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM *vm, void *reserved) {
 		return JNLUA_JNIVERSION;
 	}
 	if (!(luadebug_class = referenceclass(env, "org/terasology/jnlua/LuaState$LuaDebug"))
-			|| !(luadebug_init_id = (*env)->GetMethodID(env, luadebug_class, "<init>", "(JZ)V"))
+			|| !(luadebug_local_class = referenceclass(env, "org/terasology/jnlua/LuaState" AS_STR(JNLUA_SUFFIX) "$LuaDebug"))
+			|| !(luadebug_init_id = (*env)->GetMethodID(env, luadebug_local_class, "<init>", "(JZ)V"))
 			|| !(luadebug_field_id = (*env)->GetFieldID(env, luadebug_class, "luaDebug", "J"))) {
 		return JNLUA_JNIVERSION;
 	}

@@ -28,6 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 
 import org.terasology.jnlua.LuaState;
+import org.terasology.jnlua.LuaState53;
 
 /**
  * Abstract base class for JNLua unit tests.
@@ -42,7 +43,7 @@ public abstract class AbstractLuaTest {
 	 */
 	@Before
 	public void setup() throws Exception {
-		luaState = new LuaState();
+		luaState = new LuaState53();
 	}
 
 	/**

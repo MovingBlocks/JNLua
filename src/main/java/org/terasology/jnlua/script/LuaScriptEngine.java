@@ -46,6 +46,7 @@ import javax.script.ScriptException;
 
 import org.terasology.jnlua.LuaException;
 import org.terasology.jnlua.LuaState;
+import org.terasology.jnlua.LuaState53;
 
 /**
  * Lua script engine implementation conforming to JSR 223: Scripting for the
@@ -71,7 +72,7 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 	LuaScriptEngine(LuaScriptEngineFactory factory) {
 		super();
 		this.factory = factory;
-		luaState = new LuaState();
+		luaState = new LuaState53();
 
 		// Configuration
 		context.setBindings(createBindings(), ScriptContext.ENGINE_SCOPE);
@@ -140,7 +141,7 @@ class LuaScriptEngine extends AbstractScriptEngine implements Compilable,
 	@Override
 	public <T> T getInterface(Class<T> clasz) {
 		synchronized (luaState) {
-			getLuaState().rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
+			getLuaState().rawGet(luaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
 			try {
 				return luaState.getProxy(-1, clasz);
 			} finally {

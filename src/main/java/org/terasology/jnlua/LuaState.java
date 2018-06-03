@@ -98,7 +98,7 @@ import java.util.Set;
  * </tr>
  * </table>
  */
-public class LuaState {
+public abstract class LuaState {
 	// -- Static
 	/**
 	 * Multiple returns pseudo return value count.
@@ -108,7 +108,7 @@ public class LuaState {
 	/**
 	 * Registry pseudo-index.
 	 */
-	public static final int REGISTRYINDEX;
+	public final int REGISTRYINDEX;
 
 	/**
 	 * OK status.
@@ -144,19 +144,12 @@ public class LuaState {
 	/**
 	 * The Lua version. The format is &lt;major&gt;.&lt;minor&gt;.
 	 */
-	public static final String LUA_VERSION;
+	public final String LUA_VERSION;
 
 	/**
 	 * The Lua version number. The format is &lt;major&gt; * 100 + &lt;minor&gt;.
 	 */
-	public static final int LUA_VERSION_NUM;
-
-	static {
-		NativeSupport.getInstance().getLoader().load();
-		REGISTRYINDEX = lua_registryindex();
-		LUA_VERSION = lua_version();
-		LUA_VERSION_NUM = lua_versionnum();
-	}
+	public final int LUA_VERSION_NUM;
 
 	/**
 	 * The API version.
@@ -247,6 +240,11 @@ public class LuaState {
 	 * Creates a new instance.
 	 */
 	private LuaState(long luaState) {
+		NativeSupport.getInstance().getLoader().load(this.getClass());
+		REGISTRYINDEX = lua_registryindex();
+		LUA_VERSION = lua_version();
+		LUA_VERSION_NUM = lua_versionnum();
+
 		characterSet = Charset.forName("UTF-8");
 
 		ownState = luaState == 0L;
@@ -470,7 +468,7 @@ public class LuaState {
 	 */
 	public synchronized int gc(GcAction what, int data) {
 		check();
-		int value = what.getValue();
+		int value = what.getValue(this);
 		if (value < 0) {
 			throw new IllegalArgumentException("Invalid GC action " + what.name());
 		}
@@ -1381,7 +1379,7 @@ public class LuaState {
 	 */
 	public synchronized void arith(ArithOperator operator) {
 		check();
-		int value = operator.getValue();
+		int value = operator.getValue(this);
 		if (value < 0) {
 			throw new IllegalArgumentException("Invalid arithmetic operator " + operator.name());
 		}
@@ -2337,166 +2335,166 @@ public class LuaState {
 	}
 
 	// -- Native methods
-	private static native int lua_registryindex();
+	abstract int lua_registryindex();
 
-	private static native String lua_version();
+	abstract String lua_version();
 
-	private static native int lua_versionnum();
+	abstract int lua_versionnum();
 
-	private native void lua_newstate(int apiversion, long luaState);
+	abstract void lua_newstate(int apiversion, long luaState);
 
-	private native void lua_close(boolean ownState);
+	abstract void lua_close(boolean ownState);
 
-	private native int lua_gc(int what, int data);
+	abstract int lua_gc(int what, int data);
 
-	private native void lua_openlib(int lib);
+	abstract void lua_openlib(int lib);
 
-	private native void lua_load(InputStream inputStream, String chunkname,
+	abstract void lua_load(InputStream inputStream, String chunkname,
 			String mode) throws IOException;
 
-	private native void lua_dump(OutputStream outputStream, boolean strip) throws IOException;
+	abstract void lua_dump(OutputStream outputStream, boolean strip) throws IOException;
 
-	private native void lua_pcall(int nargs, int nresults);
+	abstract void lua_pcall(int nargs, int nresults);
 
-	private native void lua_getglobal(String name);
+	abstract void lua_getglobal(String name);
 
-	private native void lua_setglobal(String name);
+	abstract void lua_setglobal(String name);
 
-	private native void lua_pushboolean(int b);
+	abstract void lua_pushboolean(int b);
 
-	private native void lua_pushbytearray(byte[] b);
+	abstract void lua_pushbytearray(byte[] b);
 	
-	private native void lua_pushinteger(int n);
+	abstract void lua_pushinteger(int n);
 
-	private native void lua_pushjavafunction(JavaFunction f);
+	abstract void lua_pushjavafunction(JavaFunction f);
 
-	private native void lua_pushjavaobject(Object object);
+	abstract void lua_pushjavaobject(Object object);
 
-	private native void lua_pushnil();
+	abstract void lua_pushnil();
 
-	private native void lua_pushnumber(double n);
+	abstract void lua_pushnumber(double n);
 
-	private native int lua_isboolean(int index);
+	abstract int lua_isboolean(int index);
 
-	private native int lua_iscfunction(int index);
+	abstract int lua_iscfunction(int index);
 
-	private native int lua_isfunction(int index);
+	abstract int lua_isfunction(int index);
 
-	private native int lua_isjavafunction(int index);
+	abstract int lua_isjavafunction(int index);
 
-	private native int lua_isjavaobject(int index);
+	abstract int lua_isjavaobject(int index);
 
-	private native int lua_isnil(int index);
+	abstract int lua_isnil(int index);
 
-	private native int lua_isnone(int index);
+	abstract int lua_isnone(int index);
 
-	private native int lua_isnoneornil(int index);
+	abstract int lua_isnoneornil(int index);
 
-	private native int lua_isnumber(int index);
+	abstract int lua_isnumber(int index);
 
-	private native int lua_isstring(int index);
+	abstract int lua_isstring(int index);
 
-	private native int lua_istable(int index);
+	abstract int lua_istable(int index);
 
-	private native int lua_isthread(int index);
+	abstract int lua_isthread(int index);
 
-	private native int lua_compare(int index1, int index2, int operator);
+	abstract int lua_compare(int index1, int index2, int operator);
 
-	private native int lua_rawequal(int index1, int index2);
+	abstract int lua_rawequal(int index1, int index2);
 
-	private native int lua_rawlen(int index);
+	abstract int lua_rawlen(int index);
 
-	private native int lua_toboolean(int index);
+	abstract int lua_toboolean(int index);
 
-	private native byte[] lua_tobytearray(int index);
+	abstract byte[] lua_tobytearray(int index);
 	
-	private native int lua_tointeger(int index);
+	abstract int lua_tointeger(int index);
 
-	private native Integer lua_tointegerx(int index);
+	abstract Integer lua_tointegerx(int index);
 
-	private native JavaFunction lua_tojavafunction(int index);
+	abstract JavaFunction lua_tojavafunction(int index);
 
-	private native Object lua_tojavaobject(int index);
+	abstract Object lua_tojavaobject(int index);
 
-	private native double lua_tonumber(int index);
+	abstract double lua_tonumber(int index);
 
-	private native Double lua_tonumberx(int index);
+	abstract Double lua_tonumberx(int index);
 
-	private native long lua_topointer(int index);
+	abstract long lua_topointer(int index);
 
-	private native int lua_type(int index);
+	abstract int lua_type(int index);
 
-	private native int lua_absindex(int index);
+	abstract int lua_absindex(int index);
 
-	private native int lua_arith(int operator);
+	abstract int lua_arith(int operator);
 
-	private native void lua_concat(int n);
+	abstract void lua_concat(int n);
 
-	private native int lua_copy(int fromIndex, int toIndex);
+	abstract int lua_copy(int fromIndex, int toIndex);
 
-	private native int lua_gettop();
+	abstract int lua_gettop();
 
-	private native void lua_len(int index);
+	abstract void lua_len(int index);
 
-	private native void lua_insert(int index);
+	abstract void lua_insert(int index);
 
-	private native void lua_pop(int n);
+	abstract void lua_pop(int n);
 
-	private native void lua_pushvalue(int index);
+	abstract void lua_pushvalue(int index);
 
-	private native void lua_remove(int index);
+	abstract void lua_remove(int index);
 
-	private native void lua_replace(int index);
+	abstract void lua_replace(int index);
 
-	private native void lua_settop(int index);
+	abstract void lua_settop(int index);
 
-	private native void lua_createtable(int narr, int nrec);
+	abstract void lua_createtable(int narr, int nrec);
 
-	private native int lua_getsubtable(int idx, String fname);
+	abstract int lua_getsubtable(int idx, String fname);
 
-	private native void lua_gettable(int index);
+	abstract void lua_gettable(int index);
 
-	private native void lua_getfield(int index, String k);
+	abstract void lua_getfield(int index, String k);
 
-	private native void lua_newtable();
+	abstract void lua_newtable();
 
-	private native int lua_next(int index);
+	abstract int lua_next(int index);
 
-	private native void lua_rawget(int index);
+	abstract void lua_rawget(int index);
 
-	private native void lua_rawgeti(int index, int n);
+	abstract void lua_rawgeti(int index, int n);
 
-	private native void lua_rawset(int index);
+	abstract void lua_rawset(int index);
 
-	private native void lua_rawseti(int index, int n);
+	abstract void lua_rawseti(int index, int n);
 
-	private native void lua_settable(int index);
+	abstract void lua_settable(int index);
 
-	private native void lua_setfield(int index, String k);
+	abstract void lua_setfield(int index, String k);
 
-	private native int lua_getmetatable(int index);
+	abstract int lua_getmetatable(int index);
 
-	private native void lua_setmetatable(int index);
+	abstract void lua_setmetatable(int index);
 
-	private native int lua_getmetafield(int index, String k);
+	abstract int lua_getmetafield(int index, String k);
 
-	private native void lua_newthread();
+	abstract void lua_newthread();
 
-	private native int lua_resume(int index, int nargs);
+	abstract int lua_resume(int index, int nargs);
 
-	private native int lua_status(int index);
+	abstract int lua_status(int index);
 
-	private native int lua_ref(int index);
+	abstract int lua_ref(int index);
 
-	private native void lua_unref(int index, int ref);
+	abstract void lua_unref(int index, int ref);
 
-	private native LuaDebug lua_getstack(int level);
+	abstract LuaDebug lua_getstack(int level);
 
-	private native int lua_getinfo(String what, LuaDebug ar);
+	abstract int lua_getinfo(String what, LuaDebug ar);
 
-	private native int lua_tablesize(int index);
+	abstract int lua_tablesize(int index);
 
-	private native void lua_tablemove(int index, int from, int to, int count);
+	abstract void lua_tablemove(int index, int from, int to, int count);
 
 	// -- Enumerated types
 	/**
@@ -2682,8 +2680,8 @@ public class LuaState {
 			this.lua53value = lua53value;
 		}
 
-		public int getValue() {
-			if (LUA_VERSION_NUM >= 503) {
+		public int getValue(LuaState state) {
+			if (state.LUA_VERSION_NUM >= 503) {
 				return lua53value;
 			} else {
 				return lua52value;
@@ -2776,8 +2774,8 @@ public class LuaState {
 			this.lua53value = lua53value;
 		}
 
-		public int getValue() {
-			if (LUA_VERSION_NUM >= 503) {
+		public int getValue(LuaState state) {
+			if (state.LUA_VERSION_NUM >= 503) {
 				return lua53value;
 			} else {
 				return lua52value;
@@ -2917,24 +2915,24 @@ public class LuaState {
 	/**
 	 * Lua debug structure.
 	 */
-	private static class LuaDebug {
+	public static abstract class LuaDebug {
 		/**
 		 * The <code>lua_Debug</code> pointer on the JNI side. <code>0</code>
 		 * implies that the activation record has been freed. The field is
 		 * modified exclusively on the JNI side and must not be touched on the
 		 * Java side.
 		 */
-		private long luaDebug;
+		long luaDebug;
 
 		/**
 		 * Ensures proper finalization of this Lua debug structure.
 		 */
-		private Object finalizeGuardian;
+		Object finalizeGuardian;
 
 		/**
 		 * Creates a new instance.
 		 */
-		private LuaDebug(long luaDebug, boolean ownDebug) {
+		LuaDebug(long luaDebug, boolean ownDebug) {
 			this.luaDebug = luaDebug;
 			if (ownDebug) {
 				finalizeGuardian = new Object() {
@@ -2965,10 +2963,10 @@ public class LuaState {
 		}
 
 		// -- Native methods
-		private native void lua_debugfree();
+		abstract void lua_debugfree();
 
-		private native String lua_debugname();
+		abstract String lua_debugname();
 
-		private native String lua_debugnamewhat();
+		abstract String lua_debugnamewhat();
 	}
 }

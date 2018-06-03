@@ -33,6 +33,7 @@ import java.io.OutputStreamWriter;
 import org.terasology.jnlua.LuaException;
 import org.terasology.jnlua.LuaRuntimeException;
 import org.terasology.jnlua.LuaState;
+import org.terasology.jnlua.LuaState53;
 
 /**
  * A simple Lua console.
@@ -88,7 +89,7 @@ public class LuaConsole {
 	 * @param args
 	 */
 	public LuaConsole(String[] args) {
-		luaState = new LuaState();
+		luaState = new LuaState53();
 
 		// Process arguments
 		luaState.newTable(args.length, 0);
@@ -125,7 +126,7 @@ public class LuaConsole {
 	public void run() {
 		// Banner
 		System.out.println(String.format("JNLua %s Console using Lua %s.",
-				LuaState.VERSION, LuaState.LUA_VERSION));
+				LuaState.VERSION, luaState.LUA_VERSION));
 		System.out.print("Type 'go' on an empty line to evaluate a chunk. ");
 		System.out.println("Type =<expression> to print an expression.");
 

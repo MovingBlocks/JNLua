@@ -39,20 +39,11 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import org.terasology.jnlua.Converter;
-import org.terasology.jnlua.DefaultConverter;
-import org.terasology.jnlua.DefaultJavaReflector;
-import org.terasology.jnlua.JavaFunction;
-import org.terasology.jnlua.JavaReflector;
-import org.terasology.jnlua.LuaRuntimeException;
+import org.terasology.jnlua.*;
 import org.terasology.jnlua.JavaReflector.Metamethod;
-import org.terasology.jnlua.LuaState;
 import org.terasology.jnlua.LuaState.ArithOperator;
 import org.terasology.jnlua.LuaState.GcAction;
 import org.terasology.jnlua.LuaState.RelOperator;
-import org.terasology.jnlua.LuaType;
-import org.terasology.jnlua.LuaValueProxy;
-import org.terasology.jnlua.NamedJavaFunction;
 
 /**
  * Contains unit tests for the Lua state.
@@ -68,10 +59,10 @@ public class LuaStateTest extends AbstractLuaTest {
 	 */
 	@Test
 	public void testRegistryIndex() {
-		luaState.rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_MAINTHREAD);
+		luaState.rawGet(luaState.REGISTRYINDEX, LuaState.RIDX_MAINTHREAD);
 		assertEquals(LuaType.THREAD, luaState.type(-1));
 		luaState.pop(1);
-		luaState.rawGet(LuaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
+		luaState.rawGet(luaState.REGISTRYINDEX, LuaState.RIDX_GLOBALS);
 		assertEquals(LuaType.TABLE, luaState.type(-1));
 		luaState.pop(1);
 
@@ -216,7 +207,7 @@ public class LuaStateTest extends AbstractLuaTest {
 	 */
 	@Test
 	public void testOpenLibs() throws Exception {
-		LuaState newLuaState = new LuaState();
+		LuaState newLuaState = new LuaState53();
 		newLuaState.getGlobal("table");
 		assertEquals(LuaType.NIL, newLuaState.type(-1));
 		newLuaState.pop(1);
@@ -955,7 +946,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Test
 		assertNull(luaState.toByteArray(1));
 		assertNull(luaState.toByteArray(2));
-		if (LuaState.LUA_VERSION_NUM >= 503) {
+		if (luaState.LUA_VERSION_NUM >= 503) {
 			assertArrayEquals(new byte[]{'1', '.', '0'}, luaState.toByteArray(3));
 		} else {
 			assertArrayEquals(new byte[]{'1'}, luaState.toByteArray(3));
@@ -1196,7 +1187,7 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Test
 		assertNull(luaState.toString(1));
 		assertNull(luaState.toString(2));
-		if (LuaState.LUA_VERSION_NUM >= 503) {
+		if (luaState.LUA_VERSION_NUM >= 503) {
 			assertEquals("1.0", luaState.toString(3));
 		} else {
 			assertEquals("1", luaState.toString(3));
@@ -1653,16 +1644,16 @@ public class LuaStateTest extends AbstractLuaTest {
 		luaState.setField(1, "key");
 
 		// Get reference
-		int ref = luaState.ref(LuaState.REGISTRYINDEX);
+		int ref = luaState.ref(luaState.REGISTRYINDEX);
 
 		// Get table back via reference
-		luaState.rawGet(LuaState.REGISTRYINDEX, ref);
+		luaState.rawGet(luaState.REGISTRYINDEX, ref);
 		luaState.getField(1, "key");
 		assertEquals("value", luaState.toString(2));
 		luaState.pop(2);
 
 		// Release reference
-		luaState.unref(LuaState.REGISTRYINDEX, ref);
+		luaState.unref(luaState.REGISTRYINDEX, ref);
 
 		// Finish
 		assertEquals(0, luaState.getTop());
