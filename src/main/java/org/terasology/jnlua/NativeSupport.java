@@ -90,11 +90,32 @@ public final class NativeSupport {
 	private class DefaultLoader implements Loader {
 		@Override
 		public void load(Class src) {
+			// Generate library name.
+			StringBuilder builder = new StringBuilder("jnlua-");
+
 			if (src == LuaState53.class) {
-				System.loadLibrary("jnlua53");
+				builder.append("5.3-");
 			} else {
-				System.loadLibrary("jnlua52");
+				builder.append("5.2-");
 			}
+
+			if (System.getProperty("os.name").toLowerCase().contains("win")) {
+				// Windows
+				builder.append("windows-");
+			} else {
+				// Assume Linux
+				builder.append("linux-");
+			}
+
+			if (System.getProperty("os.arch").endsWith("64")) {
+				// Assume x86_64
+				builder.append("amd64");
+			} else {
+				// Assume x86_32
+				builder.append("i686");
+			}
+
+			System.loadLibrary(builder.toString());
 		}
 	}
 }

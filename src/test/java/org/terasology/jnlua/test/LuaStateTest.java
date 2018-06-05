@@ -193,10 +193,15 @@ public class LuaStateTest extends AbstractLuaTest {
 		testOpenLib(LuaState.Library.IO, "io");
 		testOpenLib(LuaState.Library.OS, "os");
 		testOpenLib(LuaState.Library.STRING, "string");
-		testOpenLib(LuaState.Library.BIT32, "bit32");
+		if (luaState instanceof LuaState52) {
+			testOpenLib(LuaState.Library.BIT32, "bit32");
+		}
 		testOpenLib(LuaState.Library.MATH, "math");
 		testOpenLib(LuaState.Library.DEBUG, "debug");
 		testOpenLib(LuaState.Library.JAVA, "java");
+		if (luaState instanceof LuaState53) {
+			testOpenLib(LuaState.Library.UTF8, "utf8");
+		}
 
 		// Finish
 		assertEquals(0, luaState.getTop());
