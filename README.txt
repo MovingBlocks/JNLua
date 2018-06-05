@@ -11,6 +11,8 @@ Please note that this version of JNLua now requires Java 8.
 
 - Added support for the "Eris" persistence library for Lua virtual machines.
 
+- Allow limiting the memory usage of individual Lua states. (fnuecke)
+
 - Corrected an issue where an array access error message would fail to format.
 
 - Made UTF string conversion happen on the Java side, due to minor issues with
