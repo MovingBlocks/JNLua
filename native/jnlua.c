@@ -78,6 +78,10 @@ static void setyield(jobject javastate, int yield);
 static lua_Debug *getluadebug(jobject javadebug);
 static void setluadebug(jobject javadebug, lua_Debug *ar);
 
+/* ---- Memory use control ---- */
+static void getluamemory(jint *total, jint *used);
+static void setluamemoryused(jint used);
+
 /* ---- Checks ---- */
 static int validindex(lua_State *L, int index);
 static int checkstack(lua_State *L, int space);
@@ -110,6 +114,8 @@ static int writehandler(lua_State *L, const void *data, size_t size, void *ud);
 static jclass luastate_class = NULL;
 static jfieldID luastate_id = 0;
 static jfieldID luathread_id = 0;
+static jfieldID luamemorytotal_id = 0;
+static jfieldID luamemoryused_id = 0;
 static jfieldID yield_id = 0;
 static jclass luadebug_class = NULL;
 static jclass luadebug_local_class = NULL;
@@ -148,6 +154,7 @@ static jmethodID write_id = 0;
 static jclass ioexception_class = NULL;
 static int initialized = 0;
 JNLUA_THREADLOCAL JNIEnv *thread_env;
+JNLUA_THREADLOCAL jobject luastate_obj;
 
 /* ---- Fields ---- */
 /* lua_registryindex() */
@@ -211,6 +218,52 @@ static int newstate_protected (lua_State *L) {
 	lua_setfield(L, -2, "__gc");
 	return 1;
 }
+
+/* This custom allocator ensures a VM won't exceed its allowed memory use. */
+static void* l_alloc (void* ud, void* ptr, size_t osize, size_t nsize) {
+	jint total, used;
+	(void)ud; /* not used, always NULL */
+	getluamemory(&total, &used);
+	if (nsize == 0) {
+		free(ptr);
+		setluamemoryused(used - osize);
+	} else {
+		if (ptr == NULL) {
+			if (total >= 0 && total - nsize >= used) {
+				setluamemoryused(used + nsize);
+				return malloc(nsize);
+			}
+		} else {
+			/* Lua expects this to not fail if nsize <= osize, so we must allow
+			   that even if it exceeds our current max memory. */
+			if (nsize <= osize || (total - (nsize - osize) >= used)) {
+				setluamemoryused(used + (nsize - osize));
+				return realloc(ptr, nsize);
+			}
+		}
+	}
+	return NULL;
+}
+
+static int panic (lua_State *L) {
+	(void)L;  /* to avoid warnings */
+	fprintf(stderr, "PANIC: unprotected error in call to Lua API (%s)\n",
+					lua_tostring(L, -1));
+	return 0;
+}
+
+static lua_State *controlled_newstate (void) {
+	jint total, used;
+	getluamemory(&total, &used);
+	if (total <= 0) {
+		return luaL_newstate();
+	} else {
+		lua_State *L = lua_newstate(l_alloc, NULL);
+		if (L) lua_atpanic(L, &panic);
+		return L;
+	}
+}
+
 JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newstate) (JNIEnv *env, jobject obj, int apiversion, jlong existing) {
 	lua_State *L;
 	
@@ -225,13 +278,14 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1newstate) (JNIEnv *env, jobject 
 	}
 
 	/* Create or attach to Lua state. */
-	L = !existing ? luaL_newstate() : (lua_State *) (uintptr_t) existing;
+	JNLUA_ENV(env);
+	luastate_obj = obj;
+	L = !existing ? controlled_newstate() : (lua_State *) (uintptr_t) existing;
 	if (!L) {
 		return;
 	}
 	
 	/* Setup Lua state. */
-	JNLUA_ENV(env);
 	if (checkstack(L, JNLUA_MINSTACK)) {
 		newstate_obj = obj;
 		lua_pushcfunction(L, newstate_protected);
@@ -1779,6 +1833,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM *vm, void *reserved) {
 	if (!(luastate_class = referenceclass(env, "org/terasology/jnlua/LuaState"))
 			|| !(luastate_id = (*env)->GetFieldID(env, luastate_class, "luaState", "J"))
 			|| !(luathread_id = (*env)->GetFieldID(env, luastate_class, "luaThread", "J"))
+			|| !(luamemorytotal_id = (*env)->GetFieldID(env, luastate_class, "luaMemoryTotal", "I"))
+			|| !(luamemoryused_id = (*env)->GetFieldID(env, luastate_class, "luaMemoryUsed", "I"))
 			|| !(yield_id = (*env)->GetFieldID(env, luastate_class, "yield", "Z"))) {
 		return JNLUA_JNIVERSION;
 	}
@@ -1970,6 +2026,7 @@ static void releasestringchars (jstring string, const char *chars) {
 /* ---- Java state operations ---- */
 /* Returns the Lua state from the Java state. */
 static lua_State *getluastate (jobject javastate) {
+	luastate_obj = javastate;
 	return (lua_State *) (uintptr_t) (*thread_env)->GetLongField(thread_env, javastate, luastate_id);
 }
 
@@ -1980,12 +2037,23 @@ static void setluastate (jobject javastate, lua_State *L) {
 
 /* Returns the Lua thread from the Java state. */
 static lua_State *getluathread (jobject javastate) {
+	luastate_obj = javastate;
 	return (lua_State *) (uintptr_t) (*thread_env)->GetLongField(thread_env, javastate, luathread_id);
 }
 
 /* Sets the Lua state in the Java state. */
 static void setluathread (jobject javastate, lua_State *L) {
 	(*thread_env)->SetLongField(thread_env, javastate, luathread_id, (jlong) (uintptr_t) L);
+}
+
+/* Gets the amount of ram available and used for and by the current Lua state. */
+static void getluamemory (jint *total, jint *used) {
+	*total = (*thread_env)->GetIntField(thread_env, luastate_obj, luamemorytotal_id);
+	*used = (*thread_env)->GetIntField(thread_env, luastate_obj, luamemoryused_id);
+}
+/* Sets the amount of ram used by the current Lua state (called by allocator). */
+static void setluamemoryused (jint used) {
+	(*thread_env)->SetIntField(thread_env, luastate_obj, luamemoryused_id, used);
 }
 
 /* Returns the yield flag from the Java state */
@@ -2154,7 +2222,7 @@ static int gcjavaobject (lua_State *L) {
 
 /* Calls a Java function. If an exception is reported, store it as the cause for later use. */
 static int calljavafunction (lua_State *L) {
-	jobject javastate, javafunction;
+	jobject luastate_obj_old, javastate, javafunction;
 	lua_State *T;
 	int nresults;
 	jthrowable throwable;
@@ -2182,6 +2250,7 @@ static int calljavafunction (lua_State *L) {
 	}
 	
 	/* Perform the call, handling coroutine situations. */
+	luastate_obj_old = luastate_obj;
 	setyield(javastate, JNI_FALSE);
 	T = getluathread(javastate);
 	if (T == L) {
@@ -2191,6 +2260,7 @@ static int calljavafunction (lua_State *L) {
 		nresults = (*thread_env)->CallIntMethod(thread_env, javafunction, invoke_id, javastate);
 		setluathread(javastate, T);
 	}
+	luastate_obj = luastate_obj_old;
 	
 	/* Handle exception */
 	throwable = (*thread_env)->ExceptionOccurred(thread_env);

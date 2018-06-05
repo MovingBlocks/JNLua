@@ -190,6 +190,20 @@ public abstract class LuaState {
 	private boolean yield;
 
 	/**
+	 * The maximum amount of memory the may be used by the Lua state, in bytes.
+	 * This can be adjusted to limit the amount of memory a state may use. If
+	 * it is reduced while a VM is active this can very quickly lead to out of
+	 * memory errors.
+	 */
+	private int luaMemoryTotal;
+
+	/**
+	 * The amount of memory currently used by the Lua state, in bytes. This is
+	 * set from the JNI side and must not be modified from the Java side.
+	 */
+	private int luaMemoryUsed;
+	
+	/**
 	 * Ensures proper finalization of this Lua state.
 	 */
 	private Object finalizeGuardian;
@@ -223,7 +237,8 @@ public abstract class LuaState {
 	/**
 	 * Creates a new instance. The class loader of this Lua state is set to the
 	 * context class loader of the calling thread. The Java reflector and the
-	 * converter are initialized with the default implementations.
+	 * converter are initialized with the default implementations. The Lua
+	 * state may allocate as much memory as it wants.
 	 * 
 	 * @see #getClassLoader()
 	 * @see #setClassLoader(ClassLoader)
@@ -233,13 +248,30 @@ public abstract class LuaState {
 	 * @see #setConverter(Converter)
 	 */
 	public LuaState() {
-		this(0L);
+		this(0L, 0);
 	}
 
 	/**
-	 * Creates a new instance.
+	 * Creates a new instance. The class loader of this Lua state is set to the
+	 * context class loader of the calling thread. The Java reflector and the
+	 * converter are initialized with the default implementations. The Lua
+	 * state may allocate only as much memory as specified. This is enforced
+	 * by a custom allocator that is only used if a maximum memory is given.
+	 *
+	 * @param memory
+	 *            the maximum amount of memory this Lua state may use, in bytes
+	 * @see #getClassLoader()
+	 * @see #setClassLoader(ClassLoader)
+	 * @see #getJavaReflector()
+	 * @see #setJavaReflector(JavaReflector)
+	 * @see #getConverter()
+	 * @see #setConverter(Converter)
 	 */
-	private LuaState(long luaState) {
+	public LuaState(int memory) {
+		this(0L, validateMemory(memory));
+	}
+
+	private LuaState(long luaState, int memory) {
 		NativeSupport.getInstance().getLoader().load(this.getClass());
 		REGISTRYINDEX = lua_registryindex();
 		LUA_VERSION = lua_version();
@@ -248,6 +280,7 @@ public abstract class LuaState {
 		characterSet = Charset.forName("UTF-8");
 
 		ownState = luaState == 0L;
+		luaMemoryTotal = memory;
 		lua_newstate(APIVERSION, luaState);
 		check();
 
@@ -428,6 +461,54 @@ public abstract class LuaState {
 			throw new NullPointerException();
 		}
 		this.converter = converter;
+	}
+
+	// -- Memory
+	/**
+	 * Returns the maximum memory consumption of this Lua state. This is the
+	 * maximum raw memory Lua may allocate for this state, in bytes.
+	 * 
+	 * @return the maximum memory consumption
+	 */
+	public synchronized int getTotalMemory() {
+		return luaMemoryTotal;
+	}
+
+	/**
+	 * Sets the maximum amount of memory this Lua state may allocate. This is
+	 * the size of the raw memory the Lua library may allocate for this tate,
+	 * in bytes. Note that you can only set the maximum memory consumption for
+	 * states that were created to enforce a maximum memory consumption.
+	 * 
+	 * @param value
+	 *            the new maximum memory size this state may allocate
+	 */
+	public synchronized void setTotalMemory(int value) {
+		if (luaMemoryTotal < 1) {
+			throw new IllegalStateException("cannot set maximum memory for this state");
+		}
+		luaMemoryTotal = validateMemory(value);
+	}
+
+	/**
+	 * Returns the current amount of unused memory by this Lua state. This is
+	 * the size of the total available memory minus the raw memory currently
+	 * allocated by this state, in bytes.
+	 * 
+	 * This is guaranteed to be less or equal to {@link #getTotalMemory()} and
+	 * larger or equal to zero.
+	 * 
+	 * This only returns something not zero if a maximum memory consumption is
+	 * enforced by this state. Otherwise it will always return zero. 
+	 * 
+	 * @return the current memory consumption
+	 */
+	public synchronized int getFreeMemory() {
+		// This is the reason we use free amount instead of used amount: if we
+		// lower the max memory we can get below used memory, which would be
+		// weird; so we just say free memory is zero, which is more intuitive
+		// and true at the same time.
+		return Math.max(0, luaMemoryTotal - luaMemoryUsed);
 	}
 
 	// -- Life cycle
@@ -2332,6 +2413,21 @@ public abstract class LuaState {
 			msg = String.format("bad %s (%s)", argument, extraMsg);
 		}
 		return new LuaRuntimeException(msg);
+	}
+
+	/**
+	 * Validates a value specified as the new maximum allowed memory use. This
+	 * is used in particular to validate values passed to the constructor.
+	 * 
+	 * @param value
+	 *            the value to validate
+	 * @return the value itself
+	 */
+	private static int validateMemory(int value) {
+		if (value < 1) {
+			throw new IllegalArgumentException("Maximum memory must be larger than zero.");
+		}
+		return value;
 	}
 
 	// -- Native methods
