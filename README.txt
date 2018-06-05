@@ -3,9 +3,18 @@ README for JNlua
 For information about JNLua, please visit http://code.google.com/p/jnlua/.
 
 
-* Release 1.0.5
+* Release 1.1.0-Terasology
+
+Please note that this version of JNLua now requires Java 8.
+
+- Added Lua 5.3 support, available alongside the existing Lua 5.2 support.
+
+- Added support for the "Eris" persistence library for Lua virtual machines.
 
 - Corrected an issue where an array access error message would fail to format.
+
+- Made UTF string conversion happen on the Java side, due to minor issues with
+using the JNI side for this purpose.
 
 
 * Release 1.0.4 (2013-07-28)
