@@ -388,14 +388,17 @@ static int openlib_protected (lua_State *L) {
 }
 
 static int openlib_isvalid(jint lib) {
-	if (lib >= 0 && lib <= 9) return 1;
 #if LUA_VERSION_NUM >= 503
+#ifndef LUA_COMPAT_BITLIB
+	if (lib == 7) return 0;
+#endif
 	if (lib == 10) return 1;
 #endif
 #ifdef JNLUA_USE_ERIS
 	if (lib == 256) return 1;
 #endif
-	return 0;
+
+	return (lib >= 0 && lib <= 9);
 }
 
 JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1openlib) (JNIEnv *env, jobject obj, jint lib) {
