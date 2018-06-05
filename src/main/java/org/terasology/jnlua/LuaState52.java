@@ -27,6 +27,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public class LuaState52 extends LuaState {
+    public LuaState52() {
+        super();
+    }
+
+    public LuaState52(int memory) {
+        super(memory);
+    }
+
     @Override
     native int lua_registryindex();
 
