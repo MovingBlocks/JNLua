@@ -1,8 +1,3 @@
-README for JNlua
-
-For information about JNLua, please visit http://code.google.com/p/jnlua/.
-
-
 * Release 1.1.0-Terasology
 
 Please note that this version of JNLua now requires Java 8.
