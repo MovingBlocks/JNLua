@@ -1008,9 +1008,9 @@ public class LuaStateTest extends AbstractLuaTest {
 		// Test
 		assertNull(luaState.toIntegerX(1));
 		assertNull(luaState.toIntegerX(2));
-		assertEquals(Integer.valueOf(1), luaState.toIntegerX(3));
+		assertEquals(Long.valueOf(1), luaState.toIntegerX(3));
 		assertNull(luaState.toIntegerX(4));
-		assertEquals(Integer.valueOf(1), luaState.toIntegerX(5));
+		assertEquals(Long.valueOf(1), luaState.toIntegerX(5));
 		assertNull(luaState.toIntegerX(6));
 		assertNull(luaState.toIntegerX(7));
 		assertNull(luaState.toIntegerX(8));

@@ -143,8 +143,8 @@ static jclass nullpointerexception_class = NULL;
 static jclass illegalargumentexception_class = NULL;
 static jclass illegalstateexception_class = NULL;
 static jclass error_class = NULL;
-static jclass integer_class = NULL;
-static jmethodID valueof_integer_id = 0;
+static jclass long_class = NULL;
+static jmethodID valueof_long_id = 0;
 static jclass double_class = NULL;
 static jmethodID valueof_double_id = 0;
 static jclass inputstream_class = NULL;
@@ -157,6 +157,11 @@ JNLUA_THREADLOCAL JNIEnv *thread_env;
 JNLUA_THREADLOCAL jobject luastate_obj;
 
 /* ---- Fields ---- */
+/* lua_integerwidth() */
+JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1integerwidth) (JNIEnv *env, jobject obj) {
+	return sizeof(lua_Integer);
+}
+
 /* lua_registryindex() */
 JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1registryindex)(JNIEnv *env, jobject obj) {
 	return (jint) LUA_REGISTRYINDEX;
@@ -597,7 +602,7 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1setglobal) (JNIEnv *env, jobject
 
 /* ---- Stack push ---- */
 /* lua_pushboolean() */
-JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushboolean) (JNIEnv *env, jobject obj, jint b) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushboolean) (JNIEnv *env, jobject obj, jboolean b) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -632,13 +637,13 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushbytearray) (JNIEnv *env, job
 }
 
 /* lua_pushinteger() */
-JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushinteger) (JNIEnv *env, jobject obj, jint n) {
+JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushinteger) (JNIEnv *env, jobject obj, jlong n) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
 	L = getluathread(obj);
 	if (checkstack(L, JNLUA_MINSTACK)) {
-		lua_pushinteger(L, n);
+		lua_pushinteger(L, (lua_Integer) n);
 	}
 }
 
@@ -705,7 +710,7 @@ JNIEXPORT void JNICALL JNI_LUASTATE_METHOD(lua_1pushnumber) (JNIEnv *env, jobjec
 
 /* ---- Stack type test ---- */
 /* lua_isboolean() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isboolean) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isboolean) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -713,11 +718,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isboolean) (JNIEnv *env, jobject
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) lua_isboolean(L, index);
+	return (jboolean) lua_isboolean(L, index);
 }
 
 /* lua_iscfunction() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1iscfunction) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1iscfunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_CFunction c_function = NULL;
 	
@@ -727,11 +732,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1iscfunction) (JNIEnv *env, jobje
 		return 0;
 	}
 	c_function = lua_tocfunction(L, index);
-	return (jint) (c_function != NULL && c_function != calljavafunction);
+	return (jboolean) ((c_function != NULL && c_function != calljavafunction) ? 1 : 0);
 }
 
 /* lua_isfunction() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isfunction) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isfunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -739,11 +744,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isfunction) (JNIEnv *env, jobjec
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) lua_isfunction(L, index);
+	return (jboolean) lua_isfunction(L, index);
 }
 
 /* lua_isjavafunction() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isjavafunction) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isjavafunction) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -751,16 +756,16 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isjavafunction) (JNIEnv *env, jo
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) (lua_tocfunction(L, index) == calljavafunction);
+	return (jboolean) ((lua_tocfunction(L, index) == calljavafunction) ? 1 : 0);
 }
 
 /* lua_isjavaobject() */
-JNLUA_THREADLOCAL int isjavaobject_result;
+JNLUA_THREADLOCAL jboolean isjavaobject_result;
 static int isjavaobject_protected (lua_State *L) {
-	isjavaobject_result = tojavaobject(L, 1, NULL) != NULL;
+	isjavaobject_result = (tojavaobject(L, 1, NULL) != NULL) ? 1 : 0;
 	return 0;
 }
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isjavaobject) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isjavaobject) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -774,11 +779,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isjavaobject) (JNIEnv *env, jobj
 		lua_pushvalue(L, index);
 		JNLUA_PCALL(L, 1, 0);
 	}
-	return (jint) isjavaobject_result;
+	return isjavaobject_result;
 }
 
 /* lua_isnil() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnil) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isnil) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -786,20 +791,20 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnil) (JNIEnv *env, jobject obj
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) lua_isnil(L, index);
+	return (jboolean) lua_isnil(L, index);
 }
 
 /* lua_isnone() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnone) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isnone) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
 	L = getluathread(obj);
-	return (jint) !validindex(L, index);
+	return (jboolean) (validindex(L, index) ? 0 : 1);
 }
 
 /* lua_isnoneornil() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnoneornil) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isnoneornil) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -807,11 +812,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnoneornil) (JNIEnv *env, jobje
 	if (!validindex(L, index)) {
 		return 1;
 	}
-	return (jint) lua_isnil(L, index);
+	return (jboolean) lua_isnil(L, index);
 }
 
 /* lua_isnumber() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnumber) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isnumber) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -819,11 +824,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isnumber) (JNIEnv *env, jobject 
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) lua_isnumber(L, index);
+	return (jboolean) lua_isnumber(L, index);
 }
 
 /* lua_isstring() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isstring) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isstring) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -831,11 +836,11 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isstring) (JNIEnv *env, jobject 
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) lua_isstring(L, index);
+	return (jboolean) lua_isstring(L, index);
 }
 
 /* lua_istable() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1istable) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1istable) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -847,7 +852,7 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1istable) (JNIEnv *env, jobject o
 }
 
 /* lua_isthread() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isthread) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1isthread) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 
 	JNLUA_ENV(env);
@@ -855,7 +860,7 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1isthread) (JNIEnv *env, jobject 
 	if (!validindex(L, index)) {
 		return 0;
 	}
-	return (jint) lua_isthread(L, index);
+	return (jboolean) lua_isthread(L, index);
 }
 
 /* ---- Stack query ---- */
@@ -912,7 +917,7 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1rawlen) (JNIEnv *env, jobject ob
 }
 
 /* lua_toboolean() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1toboolean) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jboolean JNICALL JNI_LUASTATE_METHOD(lua_1toboolean) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	
 	JNLUA_ENV(env);
@@ -962,7 +967,7 @@ JNIEXPORT jbyteArray JNICALL JNI_LUASTATE_METHOD(lua_1tobytearray) (JNIEnv *env,
 }
 
 /* lua_tointeger() */
-JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1tointeger) (JNIEnv *env, jobject obj, jint index) {
+JNIEXPORT jlong JNICALL JNI_LUASTATE_METHOD(lua_1tointeger) (JNIEnv *env, jobject obj, jint index) {
 	lua_State *L;
 	lua_Integer result = 0;
 	
@@ -971,7 +976,7 @@ JNIEXPORT jint JNICALL JNI_LUASTATE_METHOD(lua_1tointeger) (JNIEnv *env, jobject
 	if (checkindex(L, index)) {
 		result = lua_tointeger(L, index);
 	}
-	return (jint) result;
+	return (jlong) result;
 }
 
 /* lua_tointegerx() */
@@ -979,13 +984,13 @@ JNIEXPORT jobject JNICALL JNI_LUASTATE_METHOD(lua_1tointegerx) (JNIEnv *env, job
 	lua_State *L;
 	lua_Integer result = 0;
 	int isnum = 0;
-	
+
 	JNLUA_ENV(env);
 	L = getluathread(obj);
 	if (checkindex(L, index)) {
 		result = lua_tointegerx(L, index, &isnum);
 	}
-	return isnum ? (*env)->CallStaticObjectMethod(env, integer_class, valueof_integer_id, (jint) result) : NULL;
+	return isnum ? (*env)->CallStaticObjectMethod(env, long_class, valueof_long_id, (jlong) result) : NULL;
 }
 
 /* lua_tojavafunction() */
@@ -1890,8 +1895,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad (JavaVM *vm, void *reserved) {
 	if (!(error_class = referenceclass(env, "java/lang/Error"))) {
 		return JNLUA_JNIVERSION;
 	}
-	if (!(integer_class = referenceclass(env, "java/lang/Integer"))
-			|| !(valueof_integer_id = (*env)->GetStaticMethodID(env, integer_class, "valueOf", "(I)Ljava/lang/Integer;"))) {
+	if (!(long_class = referenceclass(env, "java/lang/Long"))
+			|| !(valueof_long_id = (*env)->GetStaticMethodID(env, long_class, "valueOf", "(J)Ljava/lang/Long;"))) {
 		return JNLUA_JNIVERSION;
 	}
 	if (!(double_class = referenceclass(env, "java/lang/Double"))
@@ -1964,8 +1969,8 @@ JNIEXPORT void JNICALL JNI_OnUnload (JavaVM *vm, void *reserved) {
 	if (error_class) {
 		(*env)->DeleteGlobalRef(env, error_class);
 	}
-	if (integer_class) {
-		(*env)->DeleteGlobalRef(env, integer_class);
+	if (long_class) {
+		(*env)->DeleteGlobalRef(env, long_class);
 	}
 	if (double_class) {
 		(*env)->DeleteGlobalRef(env, double_class);

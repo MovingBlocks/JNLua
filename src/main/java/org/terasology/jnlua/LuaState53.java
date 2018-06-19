@@ -36,6 +36,9 @@ public class LuaState53 extends LuaState {
     }
 
     @Override
+    native int lua_integerwidth();
+
+    @Override
     native int lua_registryindex();
 
     @Override
@@ -73,13 +76,13 @@ public class LuaState53 extends LuaState {
     native void lua_setglobal(String name);
 
     @Override
-    native void lua_pushboolean(int b);
+    native void lua_pushboolean(boolean b);
 
     @Override
     native void lua_pushbytearray(byte[] b);
 
     @Override
-    native void lua_pushinteger(int n);
+    native void lua_pushinteger(long n);
 
     @Override
     native void lua_pushjavafunction(JavaFunction f);
@@ -94,40 +97,40 @@ public class LuaState53 extends LuaState {
     native void lua_pushnumber(double n);
 
     @Override
-    native int lua_isboolean(int index);
+    native boolean lua_isboolean(int index);
 
     @Override
-    native int lua_iscfunction(int index);
+    native boolean lua_iscfunction(int index);
 
     @Override
-    native int lua_isfunction(int index);
+    native boolean lua_isfunction(int index);
 
     @Override
-    native int lua_isjavafunction(int index);
+    native boolean lua_isjavafunction(int index);
 
     @Override
-    native int lua_isjavaobject(int index);
+    native boolean lua_isjavaobject(int index);
 
     @Override
-    native int lua_isnil(int index);
+    native boolean lua_isnil(int index);
 
     @Override
-    native int lua_isnone(int index);
+    native boolean lua_isnone(int index);
 
     @Override
-    native int lua_isnoneornil(int index);
+    native boolean lua_isnoneornil(int index);
 
     @Override
-    native int lua_isnumber(int index);
+    native boolean lua_isnumber(int index);
 
     @Override
-    native int lua_isstring(int index);
+    native boolean lua_isstring(int index);
 
     @Override
-    native int lua_istable(int index);
+    native boolean lua_istable(int index);
 
     @Override
-    native int lua_isthread(int index);
+    native boolean lua_isthread(int index);
 
     @Override
     native int lua_compare(int index1, int index2, int operator);
@@ -139,16 +142,16 @@ public class LuaState53 extends LuaState {
     native int lua_rawlen(int index);
 
     @Override
-    native int lua_toboolean(int index);
+    native boolean lua_toboolean(int index);
 
     @Override
     native byte[] lua_tobytearray(int index);
 
     @Override
-    native int lua_tointeger(int index);
+    native long lua_tointeger(int index);
 
     @Override
-    native Integer lua_tointegerx(int index);
+    native Long lua_tointegerx(int index);
 
     @Override
     native JavaFunction lua_tojavafunction(int index);

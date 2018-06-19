@@ -393,14 +393,14 @@ public class DefaultJavaReflector implements JavaReflector {
 							"attempt to read array with %s accessor",
 							luaState.typeName(2)));
 				}
-				int index = luaState.toInteger(2);
+				long index = luaState.toInteger(2) - 1;
 				int length = Array.getLength(object);
-				if (index < 1 || index > length) {
+				if (index < 0 || index >= length) {
 					throw new LuaRuntimeException(String.format(
 							"attempt to read array of length %d at index %d",
-							length, index));
+							length, index + 1));
 				}
-				luaState.pushJavaObject(Array.get(object, index - 1));
+				luaState.pushJavaObject(Array.get(object, (int) index));
 				return 1;
 			}
 
@@ -441,12 +441,12 @@ public class DefaultJavaReflector implements JavaReflector {
 							"attempt to write array with %s accessor",
 							luaState.typeName(2)));
 				}
-				int index = luaState.toInteger(2);
+				long index = luaState.toInteger(2) - 1;
 				int length = Array.getLength(object);
-				if (index < 1 || index > length) {
+				if (index < 0 || index >= length) {
 					throw new LuaRuntimeException(String.format(
 							"attempt to write array of length %d at index %d",
-							length, index));
+							length, index + 1));
 				}
 				Class<?> componentType = objectClass.getComponentType();
 				if (!luaState.isJavaObject(3, componentType)) {
@@ -457,7 +457,7 @@ public class DefaultJavaReflector implements JavaReflector {
 									luaState.typeName(3)));
 				}
 				Object value = luaState.toJavaObject(3, componentType);
-				Array.set(object, index - 1, value);
+				Array.set(object, (int) index, value);
 				return 0;
 			}
 
@@ -693,11 +693,10 @@ public class DefaultJavaReflector implements JavaReflector {
 			public int invoke(LuaState luaState) {
 				List<?> list = luaState.checkJavaObject(1, List.class);
 				int size = list.size();
-				int index = luaState.checkInteger(2);
-				index++;
-				if (index >= 1 && index <= size) {
-					luaState.pushInteger(index);
-					luaState.pushJavaObject(list.get(index - 1));
+				long index = luaState.checkInteger(2);
+				if (index >= 0 && index < size) {
+					luaState.pushInteger(index + 1);
+					luaState.pushJavaObject(list.get((int) index));
 					return 2;
 				} else {
 					luaState.pushNil();
@@ -713,11 +712,10 @@ public class DefaultJavaReflector implements JavaReflector {
 			public int invoke(LuaState luaState) {
 				Object array = luaState.checkJavaObject(1, Object.class);
 				int length = java.lang.reflect.Array.getLength(array);
-				int index = luaState.checkInteger(2);
-				index++;
-				if (index >= 1 && index <= length) {
-					luaState.pushInteger(index);
-					luaState.pushJavaObject(Array.get(array, index - 1));
+				long index = luaState.checkInteger(2);
+				if (index >= 0 && index < length) {
+					luaState.pushInteger(index + 1);
+					luaState.pushJavaObject(Array.get(array, (int) index));
 					return 2;
 				} else {
 					luaState.pushNil();

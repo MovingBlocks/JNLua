@@ -206,24 +206,31 @@ public class JavaModule {
 			Object object;
 			int dimensionCount = luaState.getTop() - 1;
 			switch (dimensionCount) {
-			case 0:
+			case 0: {
 				try {
 					object = clazz.newInstance();
-				} catch (InstantiationException e) {
-					throw new RuntimeException(e);
-				} catch (IllegalAccessException e) {
+				} catch (InstantiationException | IllegalAccessException e) {
 					throw new RuntimeException(e);
 				}
-				break;
-			case 1:
-				object = Array.newInstance(clazz, luaState.checkInteger(2));
-				break;
-			default:
+			} break;
+			case 1: {
+				long length = luaState.checkInteger(2);
+				if (length > Integer.MAX_VALUE || length < 0) {
+					throw new RuntimeException("array length out of bounds: " + length);
+				}
+				object = Array.newInstance(clazz, (int) length);
+			} break;
+			default: {
 				int[] dimensions = new int[dimensionCount];
 				for (int i = 0; i < dimensionCount; i++) {
-					dimensions[i] = luaState.checkInteger(i + 2);
+					long length = luaState.checkInteger(i + 2);
+					if (length > Integer.MAX_VALUE || length < 0) {
+						throw new RuntimeException("array length out of bounds: " + length);
+					}
+					dimensions[i] = (int) length;
 				}
 				object = Array.newInstance(clazz, dimensions);
+			} break;
 			}
 
 			// Return
@@ -617,8 +624,8 @@ public class JavaModule {
 								"attempt to read list with %s accessor",
 								luaState.typeName(2)));
 					}
-					int index = luaState.toInteger(2);
-					luaState.pushJavaObject(luaList.getList().get(index - 1));
+					long index = luaState.toInteger(2);
+					luaState.pushJavaObject(luaList.getList().get((int) (index - 1)));
 					return 1;
 				}
 			}
@@ -636,17 +643,18 @@ public class JavaModule {
 								"attempt to write list with %s accessor",
 								luaState.typeName(2)));
 					}
-					int index = luaState.toInteger(2);
+					long index = luaState.toInteger(2);
+					int idxTranslated = (int) (index - 1);
 					Object value = luaState.toJavaObject(3, Object.class);
 					if (value != null) {
 						int size = luaList.getList().size();
 						if (index - 1 != size) {
-							luaList.getList().set(index - 1, value);
+							luaList.getList().set(idxTranslated, value);
 						} else {
 							luaList.getList().add(value);
 						}
 					} else {
-						luaList.getList().remove(index - 1);
+						luaList.getList().remove(idxTranslated);
 					}
 					return 0;
 				}

@@ -13,6 +13,9 @@ Please note that this version of JNLua now requires Java 8.
 - Made UTF string conversion happen on the Java side, due to minor issues with
 using the JNI side for this purpose.
 
+- JNLua now operates on 64-bit longs, as opposed to 32-bit integers, for
+pushInteger/toInteger.
+
 
 * Release 1.0.4 (2013-07-28)
 

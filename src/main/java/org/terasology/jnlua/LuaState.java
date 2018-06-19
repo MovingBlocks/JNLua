@@ -152,6 +152,11 @@ public abstract class LuaState {
 	public final int LUA_VERSION_NUM;
 
 	/**
+	 * The Lua integer width. Used internally.
+	 */
+	private final int luaIntWidth;
+
+	/**
 	 * The API version.
 	 */
 	private static final int APIVERSION = 3;
@@ -276,6 +281,7 @@ public abstract class LuaState {
 		REGISTRYINDEX = lua_registryindex();
 		LUA_VERSION = lua_version();
 		LUA_VERSION_NUM = lua_versionnum();
+		luaIntWidth = lua_integerwidth();
 
 		characterSet = Charset.forName("UTF-8");
 
@@ -761,7 +767,7 @@ public abstract class LuaState {
 	 */
 	public synchronized void pushBoolean(boolean b) {
 		check();
-		lua_pushboolean(b ? 1 : 0);
+		lua_pushboolean(b);
 	}
 
 	/**
@@ -781,9 +787,15 @@ public abstract class LuaState {
 	 * @param n
 	 *            the integer value to push
 	 */
-	public synchronized void pushInteger(int n) {
+	public synchronized void pushInteger(long n) {
 		check();
-		lua_pushinteger(n);
+		if (luaIntWidth < 8 && (n < Integer.MIN_VALUE || n > Integer.MAX_VALUE)) {
+			// The 64-bit number will not fit in a 32-bit integer. As such,
+			// we have to push it as a floating-point value.
+			lua_pushnumber(n);
+		} else {
+			lua_pushinteger(n);
+		}
 	}
 
 	/**
@@ -879,7 +891,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isBoolean(int index) {
 		check();
-		return lua_isboolean(index) != 0;
+		return lua_isboolean(index);
 	}
 
 	/**
@@ -895,7 +907,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isCFunction(int index) {
 		check();
-		return lua_iscfunction(index) != 0;
+		return lua_iscfunction(index);
 	}
 
 	/**
@@ -912,7 +924,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isFunction(int index) {
 		check();
-		return lua_isfunction(index) != 0;
+		return lua_isfunction(index);
 	}
 
 	/**
@@ -929,7 +941,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isJavaFunction(int index) {
 		check();
-		return lua_isjavafunction(index) != 0;
+		return lua_isjavafunction(index);
 	}
 
 	/**
@@ -973,7 +985,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isJavaObjectRaw(int index) {
 		check();
-		return lua_isjavaobject(index) != 0;
+		return lua_isjavaobject(index);
 	}
 
 	/**
@@ -990,7 +1002,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isNil(int index) {
 		check();
-		return lua_isnil(index) != 0;
+		return lua_isnil(index);
 	}
 
 	/**
@@ -1006,7 +1018,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isNone(int index) {
 		check();
-		return lua_isnone(index) != 0;
+		return lua_isnone(index);
 	}
 
 	/**
@@ -1024,7 +1036,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isNoneOrNil(int index) {
 		check();
-		return lua_isnoneornil(index) != 0;
+		return lua_isnoneornil(index);
 	}
 
 	/**
@@ -1041,7 +1053,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isNumber(int index) {
 		check();
-		return lua_isnumber(index) != 0;
+		return lua_isnumber(index);
 	}
 
 	/**
@@ -1058,7 +1070,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isString(int index) {
 		check();
-		return lua_isstring(index) != 0;
+		return lua_isstring(index);
 	}
 
 	/**
@@ -1074,7 +1086,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isTable(int index) {
 		check();
-		return lua_istable(index) != 0;
+		return lua_istable(index);
 	}
 
 	/**
@@ -1090,7 +1102,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean isThread(int index) {
 		check();
-		return lua_isthread(index) != 0;
+		return lua_isthread(index);
 	}
 
 	// -- Stack query
@@ -1210,7 +1222,7 @@ public abstract class LuaState {
 	 */
 	public synchronized boolean toBoolean(int index) {
 		check();
-		return lua_toboolean(index) != 0;
+		return lua_toboolean(index);
 	}
 
 	/**
@@ -1237,7 +1249,7 @@ public abstract class LuaState {
 	 *            the stack index
 	 * @return the integer representation, or <code>0</code>
 	 */
-	public synchronized int toInteger(int index) {
+	public synchronized long toInteger(int index) {
 		check();
 		return lua_tointeger(index);
 	}
@@ -1252,7 +1264,7 @@ public abstract class LuaState {
 	 * @return the integer representation, or <code>null</code>
 	 * @since JNLua 1.0.2
 	 */
-	public synchronized Integer toIntegerX(int index) {
+	public synchronized Long toIntegerX(int index) {
 		check();
 		return lua_tointegerx(index);
 	}
@@ -2038,13 +2050,13 @@ public abstract class LuaState {
 	 *            the argument index
 	 * @return the integer value
 	 */
-	public synchronized int checkInteger(int index) {
+	public synchronized long checkInteger(int index) {
 		check();
-		Integer integer = toIntegerX(index);
-		if (integer == null) {
+		Long value = toIntegerX(index);
+		if (value == null) {
 			throw getArgTypeException(index, LuaType.NUMBER);
 		}
-		return integer.intValue();
+		return value.longValue();
 	}
 
 	/**
@@ -2061,7 +2073,7 @@ public abstract class LuaState {
 	 *            the default value
 	 * @return the integer value, or the default value
 	 */
-	public synchronized int checkInteger(int index, int d) {
+	public synchronized long checkInteger(int index, int d) {
 		check();
 		if (isNoneOrNil(index)) {
 			return d;
@@ -2431,6 +2443,8 @@ public abstract class LuaState {
 	}
 
 	// -- Native methods
+	abstract int lua_integerwidth();
+
 	abstract int lua_registryindex();
 
 	abstract String lua_version();
@@ -2456,11 +2470,11 @@ public abstract class LuaState {
 
 	abstract void lua_setglobal(String name);
 
-	abstract void lua_pushboolean(int b);
+	abstract void lua_pushboolean(boolean b);
 
 	abstract void lua_pushbytearray(byte[] b);
 	
-	abstract void lua_pushinteger(int n);
+	abstract void lua_pushinteger(long n);
 
 	abstract void lua_pushjavafunction(JavaFunction f);
 
@@ -2470,29 +2484,29 @@ public abstract class LuaState {
 
 	abstract void lua_pushnumber(double n);
 
-	abstract int lua_isboolean(int index);
+	abstract boolean lua_isboolean(int index);
 
-	abstract int lua_iscfunction(int index);
+	abstract boolean lua_iscfunction(int index);
 
-	abstract int lua_isfunction(int index);
+	abstract boolean lua_isfunction(int index);
 
-	abstract int lua_isjavafunction(int index);
+	abstract boolean lua_isjavafunction(int index);
 
-	abstract int lua_isjavaobject(int index);
+	abstract boolean lua_isjavaobject(int index);
 
-	abstract int lua_isnil(int index);
+	abstract boolean lua_isnil(int index);
 
-	abstract int lua_isnone(int index);
+	abstract boolean lua_isnone(int index);
 
-	abstract int lua_isnoneornil(int index);
+	abstract boolean lua_isnoneornil(int index);
 
-	abstract int lua_isnumber(int index);
+	abstract boolean lua_isnumber(int index);
 
-	abstract int lua_isstring(int index);
+	abstract boolean lua_isstring(int index);
 
-	abstract int lua_istable(int index);
+	abstract boolean lua_istable(int index);
 
-	abstract int lua_isthread(int index);
+	abstract boolean lua_isthread(int index);
 
 	abstract int lua_compare(int index1, int index2, int operator);
 
@@ -2500,13 +2514,13 @@ public abstract class LuaState {
 
 	abstract int lua_rawlen(int index);
 
-	abstract int lua_toboolean(int index);
+	abstract boolean lua_toboolean(int index);
 
 	abstract byte[] lua_tobytearray(int index);
 	
-	abstract int lua_tointeger(int index);
+	abstract long lua_tointeger(int index);
 
-	abstract Integer lua_tointegerx(int index);
+	abstract Long lua_tointegerx(int index);
 
 	abstract JavaFunction lua_tojavafunction(int index);
 

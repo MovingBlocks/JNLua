@@ -139,10 +139,10 @@ public class DefaultConverter implements Converter {
 		LuaValueConverter<Short> shortConverter = (luaState, index) -> Short.valueOf((short) luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Short.class, shortConverter);
 		LUA_VALUE_CONVERTERS.put(Short.TYPE, shortConverter);
-		LuaValueConverter<Integer> integerConverter = (luaState, index) -> Integer.valueOf(luaState.toInteger(index));
+		LuaValueConverter<Integer> integerConverter = (luaState, index) -> Integer.valueOf((int) luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Integer.class, integerConverter);
 		LUA_VALUE_CONVERTERS.put(Integer.TYPE, integerConverter);
-		LuaValueConverter<Long> longConverter = (luaState, index) -> Long.valueOf((long) luaState.toNumber(index));
+		LuaValueConverter<Long> longConverter = (luaState, index) -> Long.valueOf(luaState.toInteger(index));
 		LUA_VALUE_CONVERTERS.put(Long.class, longConverter);
 		LUA_VALUE_CONVERTERS.put(Long.TYPE, longConverter);
 		LuaValueConverter<Float> floatConverter = (luaState, index) -> Float.valueOf((float) luaState.toNumber(index));
@@ -170,26 +170,34 @@ public class DefaultConverter implements Converter {
 	/**
 	 * Java object converters.
 	 */
-	private static final Map<Class<?>, JavaObjectConverter<?>> JAVA_OBJECT_CONVERTERS = new HashMap<Class<?>, JavaObjectConverter<?>>();
+	private static final Map<Class<?>, JavaObjectConverter<?>> JAVA_OBJECT_CONVERTERS = new HashMap<>();
 	static {
 		JavaObjectConverter<Boolean> booleanConverter = (luaState, booleanValue) -> luaState.pushBoolean(booleanValue.booleanValue());
 		JAVA_OBJECT_CONVERTERS.put(Boolean.class, booleanConverter);
 		JAVA_OBJECT_CONVERTERS.put(Boolean.TYPE, booleanConverter);
-		JavaObjectConverter<Number> numberConverter = (luaState, number) -> luaState.pushNumber(number.doubleValue());
-		JAVA_OBJECT_CONVERTERS.put(Byte.class, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Byte.TYPE, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Short.class, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Short.TYPE, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Integer.class, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Integer.TYPE, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Long.class, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(Long.TYPE, numberConverter);
+        JavaObjectConverter<Number> integerConverter = (luaState, number) -> luaState.pushInteger(number.longValue());
+		JAVA_OBJECT_CONVERTERS.put(Byte.class, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Byte.TYPE, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Short.class, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Short.TYPE, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Integer.class, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Integer.TYPE, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Long.class, integerConverter);
+		JAVA_OBJECT_CONVERTERS.put(Long.TYPE, integerConverter);
+        JavaObjectConverter<Number> numberConverter = (luaState, number) -> luaState.pushNumber(number.doubleValue());
 		JAVA_OBJECT_CONVERTERS.put(Float.class, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(Float.TYPE, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(Double.class, numberConverter);
 		JAVA_OBJECT_CONVERTERS.put(Double.TYPE, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(BigInteger.class, numberConverter);
-		JAVA_OBJECT_CONVERTERS.put(BigDecimal.class, numberConverter);
+        JAVA_OBJECT_CONVERTERS.put(BigDecimal.class, numberConverter);
+		JavaObjectConverter<BigInteger> bigIntegerConverter = (luaState, number) -> {
+		    try {
+		        luaState.pushInteger(number.longValueExact());
+            } catch (ArithmeticException e) {
+		        luaState.pushNumber(number.doubleValue());
+            }
+        };
+		JAVA_OBJECT_CONVERTERS.put(BigInteger.class, bigIntegerConverter);
 		JavaObjectConverter<Character> characterConverter = (luaState, character) -> luaState.pushInteger(character.charValue());
 		JAVA_OBJECT_CONVERTERS.put(Character.class, characterConverter);
 		JAVA_OBJECT_CONVERTERS.put(Character.TYPE, characterConverter);
