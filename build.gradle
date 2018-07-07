@@ -44,6 +44,31 @@ tasks.withType(Test) {
     ignoreFailures = true
 }
 
+task sourceJar(type: Jar) {
+    description = "Create a JAR with all sources"
+    from sourceSets.main.allSource
+    from sourceSets.test.allSource
+    classifier = 'sources'
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    description = "Create a JAR with the JavaDoc for the java sources"
+    from javadoc.destinationDir
+    classifier = 'javadoc'
+}
+
+// A configuration for publishing artifacts
+configurations {
+    published
+}
+
+// Define the artifacts we want to publish (the .pom will also be included since the Maven plugin is active)
+artifacts {
+    published jar
+    published sourceJar
+    published javadocJar
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -51,6 +76,12 @@ publishing {
             from components.java
 
             artifact jar
+            artifact sourceJar {
+                classifier "sources"
+            }
+            artifact javadocJar {
+                classifier "javadoc"
+            }
         }
     }
 }
