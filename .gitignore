@@ -12,3 +12,4 @@ out
 # Native built files
 native/Linux/*.o
 native/Linux/*.so
+natives
