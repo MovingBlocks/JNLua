@@ -27,12 +27,14 @@ libjnlua$(JNLUA_SUFFIX).$(LIB_SUFFIX): build/jnlua.o
 	$(LD) $(LDFLAGS) -Wl,-soname=libjnlua$(JNLUA_SUFFIX).$(LIB_SUFFIX) -olibjnlua$(JNLUA_SUFFIX).$(LIB_SUFFIX) -L$(LUA_LIB_DIR) build/jnlua.o -l$(LUA_LIB_NAME)
 
 build/jnlua.o: jnlua.c
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(LUA_INC_DIR) -o build/jnlua.o jnlua.c
 
 javavm.$(LIB_SUFFIX): build/javavm.o
 	$(LD) $(LDFLAGS) -Wl,-soname=javavm.$(LIB_SUFFIX) -ojavavm.$(LIB_SUFFIX) -L$(LUA_LIB_DIR) -L$(JAVA_HOME)/jre/lib/$(ARCH)/server build/javavm.o -l$(LUA_LIB_NAME) -ljvm
 
 build/javavm.o: javavm.c javavm.h
+	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(LUA_INC_DIR) -o build/javavm.o javavm.c
 
 clean:

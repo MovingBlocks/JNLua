@@ -3,11 +3,16 @@ mkdir native-build
 mkdir native-debug
 rm native-build/*.so native-build/*.dll
 rm native-debug/*.so native-debug/*.dll
+
+if [ ! -d eris ]; then
+	git clone https://github.com/fnuecke/eris
+fi
+
 cd native
 
 for lua_ver in 5.2 5.3; do
 for arch_type in i686 amd64; do
-for plat_type in windows linux; do
+for plat_type in linux; do
 
 MY_GCC="gcc"
 MY_STRIP="strip"
@@ -34,7 +39,7 @@ if [ "$plat_type" = "windows" ]; then
 	MY_LIB_SUFFIX="dll"
 fi
 
-cd ../../eris
+cd ../eris
 
 if [ "$lua_ver" == "5.2" ]; then
 	MY_JNLUA_SUFFIX="52"
@@ -49,11 +54,11 @@ fi
 make clean
 make CC="$MY_GCC" CFLAGS="$MY_CFLAGS $MY_LUA_CFLAGS" LDFLAGS="$MY_LDFLAGS" $LUA_TYPE
 
-cd ../JNLua/native
+cd ../native
 rm *.dll *.so build/*.o
 
 CFLAGS="$MY_CFLAGS -DJNLUA_USE_ERIS -DLUA_USE_POSIX" LDFLAGS="$MY_LDFLAGS" ARCH=amd64 JNLUA_SUFFIX="$MY_JNLUA_SUFFIX" \
-  LUA_LIB_NAME=lua LUA_INC_DIR=../../eris/src LUA_LIB_DIR=../../eris/src LIB_SUFFIX="$MY_LIB_SUFFIX" \
+  LUA_LIB_NAME=lua LUA_INC_DIR=../eris/src LUA_LIB_DIR=../eris/src LIB_SUFFIX="$MY_LIB_SUFFIX" \
   CC="$MY_GCC" LUA_VERSION="$lua_ver" \
   make -f Makefile.linux libjnlua
 
