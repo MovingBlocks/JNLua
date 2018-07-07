@@ -57,6 +57,52 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
 }
 
+artifactory {
+    contextUrl = 'http://artifactory.terasology.org/artifactory'
+
+    // This is the target for publishing artifacts. Unless testing locally usually the setting in Jenkins is used
+    publish {
+        repository {
+            // The repoKey can be overridden in Jenkins and via local gradle.properties if desired for testing
+            if (rootProject.hasProperty("artifactoryPublishRepo")) {
+                repoKey = artifactoryPublishRepo
+                println "Changing PUBLISH repoKey to $artifactoryPublishRepo"
+            } else {
+                repoKey = 'terasology-snapshot-local'
+                println "PUBLISH repoKey is terasology-snapshot-local (default value)"
+            }
+
+            // User and pass are overridden in Jenkins. You can supply your own for manual use in a local prop file, such as gradle.properties
+            // This way we make it so you can run locally without having the user/pass set - but if the artifactoryPublish task is called it'll fail
+            if (rootProject.hasProperty("artifactoryUser") && rootProject.hasProperty("artifactoryPass")) {
+                username = "$artifactoryUser"
+                password = "$artifactoryPass"
+            }
+            // Note that republishing artifacts under the same name (without an incremented SNAPSHOT for instance) may fail with "Forbidden"
+        }
+
+        defaults {
+            publications ('mavenJava')
+        }
+    }
+
+    // This is the source where we get dependencies. Or it would be but it does not appear to work
+    // Only the main repositories {} seems to matter, and if commented out this still doesn't help
+    // After a Jenkins upgrade in March 2015 the setting in Jenkins started working. Needs retesting here
+    resolve {
+        repository {
+            // The repoKey can be overridden in Jenkins and via local gradle.properties if desired for testing
+            if (rootProject.hasProperty("artifactoryResolveRepo")) {
+                repoKey = artifactoryResolveRepo
+                println "Changing RESOLVE repoKey to $artifactoryResolveRepo"
+            } else {
+                repoKey = 'virtual-repo-live'
+                println "RESOLVE repoKey is virtual-repo-live (default value)"
+            }
+        }
+    }
+}
+
 // A configuration for publishing artifacts
 configurations {
     published
@@ -84,4 +130,12 @@ publishing {
             }
         }
     }
+}
+
+artifactoryPublish {
+    dependsOn jar, sourceJar, javadocJar
+}
+
+javadoc {
+    failOnError = false
 }
