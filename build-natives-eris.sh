@@ -12,7 +12,7 @@ cd native
 
 for lua_ver in 5.2 5.3; do
 for arch_type in i686 amd64; do
-for plat_type in linux; do
+for plat_type in windows linux; do
 
 MY_GCC="gcc"
 MY_STRIP="strip"
