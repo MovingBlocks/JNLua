@@ -90,8 +90,11 @@ public final class NativeSupport {
 	private class DefaultLoader implements Loader {
 		@Override
 		public void load(Class src) {
+			boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+			boolean isMacOS = System.getProperty("os.name").toLowerCase().contains("mac");
+
 			// Generate library name.
-			StringBuilder builder = new StringBuilder("jnlua-");
+			StringBuilder builder = new StringBuilder(isWindows ? "libjnlua-" : "jnlua-");
 
 			if (src == LuaState53.class) {
 				builder.append("5.3-");
@@ -99,9 +102,11 @@ public final class NativeSupport {
 				builder.append("5.2-");
 			}
 
-			if (System.getProperty("os.name").toLowerCase().contains("win")) {
+			if (isWindows) {
 				// Windows
 				builder.append("windows-");
+			} else if (isMacOS) {
+				builder.append("mac-");
 			} else {
 				// Assume Linux
 				builder.append("linux-");

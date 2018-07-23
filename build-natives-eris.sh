@@ -12,7 +12,7 @@ cd native
 
 for lua_ver in 5.2 5.3; do
 for arch_type in i686 amd64; do
-for plat_type in linux; do
+for plat_type in windows linux; do
 
 MY_GCC="gcc"
 MY_STRIP="strip"
@@ -22,12 +22,12 @@ if [ "$arch_type" == "i686" ]; then
 	MINGW_GCC="i686-w64-mingw32-gcc"
 	MINGW_STRIP="i686-w64-mingw32-strip"
 	MY_CFLAGS="-fPIC -O2 -m32"
-	MY_LDFLAGS="-m32"
+	MY_LDFLAGS="-m32 -static-libgcc"
 else
 	MINGW_GCC="x86_64-w64-mingw32-gcc"
 	MINGW_STRIP="x86_64-w64-mingw32-strip"
 	MY_CFLAGS="-fPIC -O2 -m64"
-	MY_LDFLAGS="-m64"
+	MY_LDFLAGS="-m64 -static-libgcc"
 fi
 
 LUA_TYPE="posix"
