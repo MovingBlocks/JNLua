@@ -5,7 +5,7 @@ rm native-build/*.so native-build/*.dll
 rm native-debug/*.so native-debug/*.dll
 
 if [ ! -d eris ]; then
-	git clone https://github.com/fnuecke/eris
+	git clone https://github.com/MovingBlocks/eris
 fi
 
 cd native
