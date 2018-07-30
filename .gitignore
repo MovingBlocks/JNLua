@@ -9,7 +9,16 @@ build
 out
 .gradle
 
+# For the moment ignore this so it can be used locally for secrets
+gradle.properties
+
 # Native built files
 native/Linux/*.o
 native/Linux/*.so
 natives
+
+# Other stuff
+.DS_Store
+eris/
+native-build/
+native-debug/

@@ -1,0 +1,50 @@
+apply plugin: 'base'
+apply plugin: 'maven-publish'
+
+version = '0.1.0-SNAPSHOT'
+group = 'org.terasology.jnlua'
+
+task zipNatives(type: Zip) {
+    description 'Creates a zip archive that contains all JNLua native files'
+
+    from ('natives') {
+        include '*linux*'
+        into 'linux'
+    }
+
+    from ('natives') {
+        include '*windows*'
+        into 'windows'
+    }
+
+    from ('natives') {
+        include '*mac*'
+        into 'macos'
+    }
+
+    destinationDir = file(buildDir)
+    baseName = 'jnlua_natives'
+}
+
+publishing {
+    publications {
+        zippedNatives(MavenPublication) {
+            artifact zipNatives
+
+            artifactId 'jnlua_natives'
+        }
+    }
+
+    repositories {
+        maven {
+            // First see if we have properties with creds (gradle.properties)
+            if (project.hasProperty('artifactoryUser') && project.hasProperty('artifactoryPass')) {
+                credentials {
+                    username artifactoryUser
+                    password artifactoryPass
+                }
+            }
+            url "http://artifactory.terasology.org/artifactory/libs-snapshot-local"
+        }
+    }
+}
