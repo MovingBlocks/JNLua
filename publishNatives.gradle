@@ -19,7 +19,7 @@ task zipNatives(type: Zip) {
 
     from ('natives') {
         include '*mac*'
-        into 'macos'
+        into 'macosx'
     }
 
     destinationDir = file(buildDir)
