@@ -41,20 +41,35 @@ Additionally, the Terasology version provides the following:
 
 ## Building
 
-To build the Java side of JNLua, a simple "gradle build" is sufficient.
+To build the Java side of JNLua, a simple "./gradlew build" is sufficient.
 
 Building the natives is more involved. Generally, JNLua expects natives to be present with the following filenames:
 
 libjnlua-[5.2,5.3]-[windows,linux]-[i686,amd64].[dll,so]
 
-A work-in-progress build script for Terasology's purposes is provided as build-natives-eris.sh. It expects:
+To build the natives on Linux you need:
 
 * a reasonably modern Linux distribution (tested with Debian Stretch),
 * MinGW-w64 (apt-get install mingw-w64),
-* 32-bit and 64-bit build environments (apt-get install build-essential gcc-multilib libc6-dev:i386),
-* [Eris](https://github.com/fnuecke/eris) cloned in the parent directory (so there are two: "eris" and "JNLua").
+* 32-bit and 64-bit build environments (apt-get install build-essential gcc-multilib libc6-dev:i386)
 
-The script should then work.
+Then simply run `./build-natives-eris.sh` and with a little luck you now have shiny new natives compiled for Linux (and Windows).
+
+Note that during the script execution [Eris](https://github.com/fnuecke/eris) will be cloned into a subdir `eris`.
+
+On Mac you need general development tools and `JAVA_HOME` set, to for instance `/Library/Java/JavaVirtualMachines/jdk-10.0.1.jdk/Contents/Home`
+
+During initial work on the natives script on Mac that was the only edit needed. Unsure if any additional steps are needed, some were already done.
+
+Run `./build-natives-eris_mac.sh` and the Mac OS specific natives should now be yours as well.
+
+In both cases for the unit tests to work the resulting files must be copied into a `natives` subdir, which Gradle puts on the Java library path.
+
+For instance on Mac make sure the directory exists then simply run `cp native-build/* natives` and a `./gradlew test` should pass all the tests.
+
+Our official build publishes both the JNLua jar and natives to the [MovingBlocks Artifactory](http://artifactory.terasology.org/artifactory/webapp/#/artifacts/browse/tree/General/libs-snapshot-local/org/terasology/jnlua) via `publishNatives.gradle` and some Jenkins magic.
+
+Mac cloud builds are tricky so we're using a [special snowflake "build server" (namely Cervator's Macbook)](http://jenkins.terasology.org/computer/MacBuilder/) that'll be connected manually when needed.
 
 ## License
 
