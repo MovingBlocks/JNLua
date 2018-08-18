@@ -69,7 +69,7 @@ For instance on Mac make sure the directory exists then simply run `cp native-bu
 
 Our official build publishes both the JNLua jar and natives to the [MovingBlocks Artifactory](http://artifactory.terasology.org/artifactory/webapp/#/artifacts/browse/tree/General/libs-snapshot-local/org/terasology/jnlua) via `publishNatives.gradle` and some Jenkins magic.
 
-Mac cloud builds are tricky so we're using a [special snowflake "build server" (namely Cervator's Macbook)](http://jenkins.terasology.org/computer/MacBuilder/) that'll be connected manually when needed.
+Mac cloud builds are tricky so for the moment we're using a [Jenkins agent on Cervator's Macbook](http://jenkins.terasology.org/computer/MacBuilder/) that'll be connected manually when needed.
 
 ## License
 
