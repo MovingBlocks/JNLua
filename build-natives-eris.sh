@@ -10,7 +10,7 @@ fi
 
 cd native
 
-for lua_ver in 5.2 5.3; do
+for lua_ver in 5.2 5.3 5.4; do
 for arch_type in i686 amd64; do
 for plat_type in windows linux; do
 
@@ -45,10 +45,14 @@ if [ "$lua_ver" == "5.2" ]; then
 	MY_JNLUA_SUFFIX="52"
 	MY_LUA_CFLAGS=""
 	git checkout master
-else
+elif [ "$lua_ver" == "5.3" ]; then
 	MY_JNLUA_SUFFIX="53"
 	MY_LUA_CFLAGS="-DLUA_COMPAT_5_2"
 	git checkout master-lua5.3
+else
+	MY_JNLUA_SUFFIX="54"
+	MY_LUA_CFLAGS="-DLUA_COMPAT_5_3"
+	git checkout master-lua5.4
 fi
 
 make clean
