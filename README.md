@@ -45,7 +45,7 @@ To build the Java side of JNLua, a simple "./gradlew build" is sufficient.
 
 Building the natives is more involved. Generally, JNLua expects natives to be present with the following filenames:
 
-libjnlua-[5.2,5.3]-[windows,linux]-[i686,amd64].[dll,so]
+libjnlua-[5.2,5.3]-[windows,linux,mac]-[i686,amd64,aarch64].[dll,so]
 
 To build the natives on Linux you need:
 

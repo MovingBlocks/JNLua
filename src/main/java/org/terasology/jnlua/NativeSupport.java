@@ -112,7 +112,9 @@ public final class NativeSupport {
 				builder.append("linux-");
 			}
 
-			if (System.getProperty("os.arch").endsWith("64")) {
+			if (System.getProperty("os.arch").endsWith("aarch64")) {
+				builder.append("aarch64");
+			} else if (System.getProperty("os.arch").endsWith("64")) {
 				// Assume x86_64
 				builder.append("amd64");
 			} else {

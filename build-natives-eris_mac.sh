@@ -11,7 +11,7 @@ fi
 cd native
 
 for lua_ver in 5.2 5.3; do
-for arch_type in amd64; do
+for arch_type in amd64 aarch64; do
 for plat_type in mac; do
 
 MY_GCC="gcc"
@@ -46,7 +46,7 @@ make CC="$MY_GCC" CFLAGS="$MY_CFLAGS $MY_LUA_CFLAGS" LDFLAGS="$MY_LDFLAGS" $LUA_
 cd ../native
 rm *.dll *.so build/*.o
 
-CFLAGS="$MY_CFLAGS -DJNLUA_USE_ERIS -DLUA_USE_POSIX" LDFLAGS="$MY_LDFLAGS" ARCH=amd64 JNLUA_SUFFIX="$MY_JNLUA_SUFFIX" \
+CFLAGS="$MY_CFLAGS -DJNLUA_USE_ERIS -DLUA_USE_POSIX" LDFLAGS="$MY_LDFLAGS" ARCH="$arch_type" JNLUA_SUFFIX="$MY_JNLUA_SUFFIX" \
   LUA_LIB_NAME=lua LUA_INC_DIR=../eris/src LUA_LIB_DIR=../eris/src LIB_SUFFIX="$MY_LIB_SUFFIX" \
   CC="$MY_GCC" LUA_VERSION="$lua_ver" \
   make -f Makefile.mac libjnlua

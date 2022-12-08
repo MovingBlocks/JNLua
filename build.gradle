@@ -18,10 +18,11 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-	testCompile 'junit:junit:4.12'
+    testImplementation("junit:junit:4.13.2")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.8.2")
 }
 
-version = '0.1.0-SNAPSHOT'
+version = '0.1.1-SNAPSHOT'
 group = 'org.terasology.jnlua'
 
 tasks.withType(Test) {
